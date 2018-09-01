@@ -17,6 +17,7 @@ namespace wallib.Models
         public int CategoryID { get; set; }
         public string ItemId { get; set; }
 
+        public string PictureUrl { get; set; }
     }
 
     [Table("WalMap")]
