@@ -48,7 +48,7 @@ namespace wallib.Models
         }
         public void RemoveMapRecords(int categoryId)
         {
-            Database.ExecuteSqlCommand("delete from WalItems where categoryId=" + categoryId.ToString());
+            Database.ExecuteSqlCommand("delete from WalMap where categoryId=" + categoryId.ToString());
         }
     }
 }
