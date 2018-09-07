@@ -50,5 +50,7 @@ namespace wallib.Models
         {
             Database.ExecuteSqlCommand("delete from WalMap where categoryId=" + categoryId.ToString());
         }
+
+
     }
 }

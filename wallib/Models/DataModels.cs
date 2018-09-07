@@ -19,6 +19,7 @@ namespace wallib.Models
         public string ItemId { get; set; }
 
         public string PictureUrl { get; set; }
+        public bool OutOfStock { get; set; }
     }
 
     [Table("WalMap")]
@@ -35,4 +36,6 @@ namespace wallib.Models
         public string ImageUrl { get; set; }
         public bool IsMultiVariationListing { get; set; }
     }
+
+
 }
