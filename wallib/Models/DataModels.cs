@@ -1,27 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace wallib.Models
 {
-    [Table("WalItems")]
-    public class WalItem
-    {
-        public int ID { get; set; }
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public decimal Price { get; set; }
-        public string DetailUrl { get; set; }
-        public int CategoryID { get; set; }
-        public string ItemId { get; set; }
-
-        public string PictureUrl { get; set; }
-        public bool OutOfStock { get; set; }
-    }
-
     [Table("WalMap")]
     public class WalMap
     {

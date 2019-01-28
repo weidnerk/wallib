@@ -56,5 +56,15 @@
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\dsmodels\dsmodels\dsmodels.csproj">
+      <Project>{A34F18F9-50A8-4648-87A9-70743B810E71}</Project>
+      <Name>dsmodels</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\dsutil\dsutil.csproj">
+      <Project>{7fa17f92-860b-4367-ab69-a3a417a29a79}</Project>
+      <Name>dsutil</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
