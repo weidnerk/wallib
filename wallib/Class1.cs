@@ -28,47 +28,59 @@ namespace wallib
                 {
                     // ... Read the string.
                     string result = await content.ReadAsStringAsync();
-                    itemNo = parseItemNo(result);
-                    item.ItemId = itemNo;
-
-                    string marker = "\"product-short-description-wrapper\" itemprop=\"description\">";
-                    descr = parseDescr(result, marker, "<");
-                    if (string.IsNullOrEmpty(descr))
+                    if (response.IsSuccessStatusCode)
                     {
-                        marker = "\"product_long_description\":{\"values\":[\"";
-                        descr = parseDescr(result, marker, "}");
-                    }
-                    item.Description = descr;
+                        itemNo = parseItemNo(result);
+                        item.ItemId = itemNo;
 
-                    images = ParseImages(result);
-                    if (images.Count == 0)
-                    {
-                        int stop = 1;
+                        string marker = "\"product-short-description-wrapper\" itemprop=\"description\">";
+                        descr = parseDescr(result, marker, "<");
+                        if (string.IsNullOrEmpty(descr))
+                        {
+                            marker = "\"product_long_description\":{\"values\":[\"";
+                            descr = parseDescr(result, marker, "}");
+                        }
+                        item.Description = descr;
+
+                        images = ParseImages(result);
+                        if (images.Count == 0)
+                        {
+                            int stop = 1;
+                        }
+                        else
+                        {
+                            item.PictureUrl = dsutil.DSUtil.ListToDelimited(images.ToArray(), ';');
+                        }
+                        //Console.WriteLine("images: " + images.Count);
+                        if (item.Description.Contains("Minnie"))
+                        {
+                            int stop = 99;
+                        }
+
+                        bool outOfStock = false;
+
+                        // NO, GetDetail cannot assume that a Listing record exists
+                        //if (!listing.Variation)
+                        //{
+                            outOfStock = ParseOutOfStock(result);
+                        //}
+                        //else
+                        //{
+                        //    outOfStock = ParseOutOfStockVariation(result, listing.VariationDescription);
+                        //}
+                        item.OutOfStock = outOfStock;
+
+                        string offerPrice = wallib.Class1.getOfferPriceDetail(result, 0);
+                        item.Price = Convert.ToDecimal(offerPrice);
+
+                        bool shippingNotAvailable = ParseShippingNotAvailable(result);
+                        item.ShippingNotAvailable = shippingNotAvailable;
+
+                        item.FulfilledByWalmart = FulfilledByWalmart(result);
                     }
                     else
                     {
-                        item.PictureUrl = dsutil.DSUtil.ListToDelimited(images.ToArray(), ';');
-                    }
-                    //Console.WriteLine("images: " + images.Count);
-                    if (item.Description.Contains("Minnie"))
-                    {
-                        int stop = 99;
-                    }
-                    bool outOfStock = ParseOutOfStock(result);
-                    if (outOfStock)
-                    {
-                        int stop = 1;
-                    }
-                    item.OutOfStock = outOfStock;
-                    string offerPrice = wallib.Class1.getOfferPriceDetail(result, 0);
-                    item.Price = Convert.ToDecimal(offerPrice);
-
-                    bool shippingNotAvailable = ParseShippingNotAvailable(result);
-                    item.ShippingNotAvailable = shippingNotAvailable;
-
-                    if (item.Description.Contains("arcade"))
-                    {
-                        int stop = 999;
+                        item = null;
                     }
                 }
             }
@@ -180,10 +192,49 @@ namespace wallib
             return descr;
         }
 
+        protected static bool FulfilledByWalmart(string html)
+        {
+            const string marker = "\"sold_by\":{\"values\":[\"Walmart\"]";
+            int pos = html.IndexOf(marker);
+            if (pos > -1)
+            {
+                const string shippedMarker = "shipped by</span></span><a class=\"seller-name\" href=\"https://help.walmart.com/\"";
+                pos = html.IndexOf(shippedMarker);
+                return (pos > -1) ? true : false;
+            }
+            return false;
+        }
+
         protected static bool ParseOutOfStock(string html)
         {
             const string marker = "Get In-Stock Alert";
             int pos = html.IndexOf(marker);
+            return (pos > -1) ? true : false;
+        }
+
+        protected static int OutOfStockFound(string html)
+        {
+            const string marker = "Out of stock";
+            int pos = 0;
+            int cnt = 0;
+            do
+            {
+                pos = html.IndexOf(marker, pos + 5);
+                ++cnt;
+            } while (pos > -1);
+            return cnt - 1;
+
+        }
+
+        protected static bool ParseOutOfStockVariation(string html, string variationDescription)
+        {
+            string marker = variationDescription + ",  is Not available";
+            int pos = html.IndexOf(marker);
+            if (pos == -1)
+            {
+                marker = variationDescription + ",  is Out of stock";
+                pos = html.IndexOf(marker);
+            }
             return (pos > -1) ? true : false;
         }
 
@@ -221,6 +272,17 @@ namespace wallib
             endPricePos = html.IndexOf("\"", pricePos + priceMarker.Length);
             offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
             return offerPrice;
+        }
+
+        public static decimal reprice(decimal price, double px_mult)
+        {
+            //const decimal px_mult = 1.28m;
+            const decimal shippingCost = 6.0m;
+            const decimal freeShipping = 35.0m;
+
+            if (price < freeShipping) price += shippingCost;
+            decimal newprice = price * (decimal)px_mult;
+            return newprice;
         }
 
     }
