@@ -62,7 +62,7 @@ namespace wallib
                         // NO, GetDetail cannot assume that a Listing record exists
                         //if (!listing.Variation)
                         //{
-                            outOfStock = ParseOutOfStock(result);
+                        outOfStock = ParseOutOfStock(result);
                         //}
                         //else
                         //{
@@ -71,8 +71,21 @@ namespace wallib
                         item.OutOfStock = outOfStock;
 
                         string offerPrice = wallib.Class1.getOfferPriceDetail(result, 0);
-                        item.Price = Convert.ToDecimal(offerPrice);
-
+                        decimal price;
+                        bool r = decimal.TryParse(offerPrice, out price);
+                        if (!r)
+                        {
+                            offerPrice = wallib.Class1.getOfferPriceDetail_secondAttempt(result, 0);
+                            r = decimal.TryParse(offerPrice, out price);
+                            if (r)
+                            {
+                                item.Price = Convert.ToDecimal(offerPrice);
+                            }
+                        }
+                        else
+                        {
+                            item.Price = Convert.ToDecimal(offerPrice);
+                        }
                         bool shippingNotAvailable = ParseShippingNotAvailable(result);
                         item.ShippingNotAvailable = shippingNotAvailable;
 
@@ -198,6 +211,8 @@ namespace wallib
             int pos = html.IndexOf(marker);
             if (pos > -1)
             {
+                return true;
+                // 10.22.2019 not sure this relevent anymore
                 const string shippedMarker = "shipped by</span></span><a class=\"seller-name\" href=\"https://help.walmart.com/\"";
                 pos = html.IndexOf(shippedMarker);
                 return (pos > -1) ? true : false;
@@ -265,11 +280,24 @@ namespace wallib
         public static string getOfferPriceDetail(string html, int startSearching)
         {
             string priceMarker = "class=\"price-group\" role=\"text\" aria-label=\"$";
+            priceMarker = "\"CURRENT\":{\"price\":";
             int endPricePos = 0;
             string offerPrice = null;
 
             int pricePos = html.IndexOf(priceMarker, startSearching);
-            endPricePos = html.IndexOf("\"", pricePos + priceMarker.Length);
+            endPricePos = html.IndexOf(",", pricePos + priceMarker.Length);
+            offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
+            return offerPrice;
+        }
+        public static string getOfferPriceDetail_secondAttempt(string html, int startSearching)
+        {
+            string priceMarker = "class=\"price-group\" role=\"text\" aria-label=\"$";
+            priceMarker = "\"currentPrice\":";
+            int endPricePos = 0;
+            string offerPrice = null;
+
+            int pricePos = html.IndexOf(priceMarker, startSearching);
+            endPricePos = html.IndexOf(",", pricePos + priceMarker.Length);
             offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
             return offerPrice;
         }
