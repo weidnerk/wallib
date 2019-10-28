@@ -1,8 +1,10 @@
 ﻿using dsmodels;
+using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace wallib
 {
@@ -30,6 +32,15 @@ namespace wallib
                     string result = await content.ReadAsStringAsync();
                     if (response.IsSuccessStatusCode)
                     {
+                        // https://stackoverflow.com/questions/4182594/grab-all-text-from-html-with-html-agility-pack
+                        HtmlDocument doc = new HtmlDocument();
+                        doc.LoadHtml(result);
+                        string output = null;
+                        foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//text()"))
+                        {
+                            output += node.InnerText;
+                        }
+
                         itemNo = parseItemNo(result);
                         item.ItemId = itemNo;
 
