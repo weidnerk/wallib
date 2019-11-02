@@ -53,7 +53,9 @@ namespace wallib
                         }
                         item.Description = descr;
 
-                        images = ParseImages(result);
+                        images = GetImages(result);
+
+                        // images = ParseImages(result);
                         if (images.Count == 0)
                         {
                             int stop = 1;
@@ -150,6 +152,50 @@ namespace wallib
             while (!done);
 
             return itemNo;
+        }
+
+        protected static List<string> GetImages_xpath(string url)
+        {
+            HtmlAgilityPack.HtmlWeb web = new HtmlWeb();
+            HtmlAgilityPack.HtmlDocument doc = web.Load(url);
+            string x = "/html[@class='wf-myriadpro-n4-loading wf-myriadpro-n6-loading wf-myriadpro-n7-loading wf-loading']/body/div[@class='js-content']/div[@class='page-wrapper']/div[@class='page-full-wrapper']/div[@class='js-body-content']/div[@class='ProductPage-verticalTheme-standard ProductPage-verticalId-standard']/div[@class='atf-content']/div/div[1]/div[@class='ResponsiveContainer ny-atf-container mweb-enhanced-atf']/div/div[@class='TempoZoneLayout TempoZoneLayout-navbar']/div/div[@class='Grid']/div[@class='product-atf']/div[@class='Grid bot-dweb']/div[@class='Grid-col u-size-1-2-m'][2]/div[@class='hf-Bot']/h1[@class='prod-ProductTitle font-normal']";
+            var r = doc.DocumentNode.SelectSingleNode(x);
+            var t = r.InnerText;
+
+            return null;
+        }
+
+        protected static List<string> GetImages(string html)
+        {
+            var images = new List<string>();
+            string startMarker = "Brand Link";
+            string endMarker = "personalizationData";
+            int startPos = 0;
+            int endPos = 0;
+
+            startPos = html.IndexOf(startMarker);
+            endPos = html.IndexOf(endMarker, startPos);
+            string toSearch = html.Substring(startPos, endPos - startPos);
+
+            int nextPos = 0;
+            bool done = false;
+            do
+            {
+                int pos = toSearch.IndexOf("https://i5.walmartimages.com/asr/", nextPos);
+                if (pos > -1)
+                {
+                    int stop = toSearch.IndexOf("jpeg", pos + 1);
+                    string pic = toSearch.Substring(pos, stop - pos + 4);
+                    images.Add(pic);
+                    nextPos = stop + 1;
+                }
+                else
+                {
+                    done = true;
+                }
+            } while (!done);
+
+            return images;
         }
 
         protected static List<string> ParseImages(string html)
