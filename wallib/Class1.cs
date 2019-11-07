@@ -193,8 +193,18 @@ namespace wallib
                     }
                     else
                     {
-                        // had weird case where the image url was a png file but the image was a black square - some glitch on their site
-                        done = true;
+                        stop = toSearch.IndexOf("png", pos + 1);
+                        if (stop > -1)
+                        {
+                            string pic = toSearch.Substring(pos, stop - pos + 3);
+                            images.Add(pic);
+                            nextPos = stop + 1;
+                        }
+                        else
+                        {
+                            // had weird case where the image url was a png file but the image was a black square - some glitch on their site
+                            done = true;
+                        }
                     }
                 }
                 else
