@@ -32,27 +32,20 @@ namespace wallib
                     string html = await content.ReadAsStringAsync();
                     if (response.IsSuccessStatusCode)
                     {
-                        // https://stackoverflow.com/questions/4182594/grab-all-text-from-html-with-html-agility-pack
-                        HtmlDocument doc = new HtmlDocument();
-                        doc.LoadHtml(html);
-                        string output = null;
-                        foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//text()"))
-                        {
-                            output += node.InnerText;
-                        }
                         item.IsVariation = IsVariation(html);
                         GetMPN(html);
+                        item.Description = GetDescr(html);
                         itemNo = parseItemNo(html);
                         item.ItemId = itemNo;
 
-                        string marker = "\"product-short-description-wrapper\" itemprop=\"description\">";
-                        descr = parseDescr(html, marker, "<");
-                        if (string.IsNullOrEmpty(descr))
-                        {
-                            marker = "\"product_long_description\":{\"values\":[\"";
-                            descr = parseDescr(html, marker, "}");
-                        }
-                        item.Description = descr;
+                        //string marker = "\"product-short-description-wrapper\" itemprop=\"description\">";
+                        //descr = parseDescr(html, marker, "<");
+                        //if (string.IsNullOrEmpty(descr))
+                        //{
+                        //    marker = "\"product_long_description\":{\"values\":[\"";
+                        //    descr = parseDescr(html, marker, "}");
+                        //}
+                        //item.Description = descr;
 
                         images = GetImages(html);
 
@@ -440,6 +433,20 @@ namespace wallib
                     }
                 }
             }
+        }
+
+        public static string GetDescr(string html)
+        {
+            string result = null;
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            //var node = doc.DocumentNode.SelectSingleNode("//div[@class='about-desc']");
+            var node = doc.DocumentNode.SelectSingleNode("//div[@id='about-product-section']");
+            if (node != null)
+            {
+                result = node.InnerHtml;
+            }
+            return result;
         }
 
     }
