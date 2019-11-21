@@ -14,7 +14,7 @@ namespace wallib
         /// Give a product url, parse the detail
         /// </summary>
         /// <param name="url"></param>
-        /// <returns>WalItem object</returns>
+        /// <returns>WalItem object, null if could not fetch item</returns>
         public static async Task<WalItem> GetDetail(string url)
         {
             var item = new WalItem();
@@ -29,31 +29,32 @@ namespace wallib
                 using (HttpContent content = response.Content)
                 {
                     // ... Read the string.
-                    string result = await content.ReadAsStringAsync();
+                    string html = await content.ReadAsStringAsync();
                     if (response.IsSuccessStatusCode)
                     {
                         // https://stackoverflow.com/questions/4182594/grab-all-text-from-html-with-html-agility-pack
                         HtmlDocument doc = new HtmlDocument();
-                        doc.LoadHtml(result);
+                        doc.LoadHtml(html);
                         string output = null;
                         foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//text()"))
                         {
                             output += node.InnerText;
                         }
-
-                        itemNo = parseItemNo(result);
+                        item.IsVariation = IsVariation(html);
+                        GetMPN(html);
+                        itemNo = parseItemNo(html);
                         item.ItemId = itemNo;
 
                         string marker = "\"product-short-description-wrapper\" itemprop=\"description\">";
-                        descr = parseDescr(result, marker, "<");
+                        descr = parseDescr(html, marker, "<");
                         if (string.IsNullOrEmpty(descr))
                         {
                             marker = "\"product_long_description\":{\"values\":[\"";
-                            descr = parseDescr(result, marker, "}");
+                            descr = parseDescr(html, marker, "}");
                         }
                         item.Description = descr;
 
-                        images = GetImages(result);
+                        images = GetImages(html);
 
                         // images = ParseImages(result);
                         if (images.Count == 0)
@@ -75,7 +76,7 @@ namespace wallib
                         // NO, GetDetail cannot assume that a Listing record exists
                         //if (!listing.Variation)
                         //{
-                        outOfStock = ParseOutOfStock(result);
+                        outOfStock = ParseOutOfStock(html);
                         //}
                         //else
                         //{
@@ -83,12 +84,12 @@ namespace wallib
                         //}
                         item.OutOfStock = outOfStock;
 
-                        string offerPrice = wallib.Class1.getOfferPriceDetail(result, 0);
+                        string offerPrice = wallib.Class1.getOfferPriceDetail(html, 0);
                         decimal price;
                         bool r = decimal.TryParse(offerPrice, out price);
                         if (!r)
                         {
-                            offerPrice = wallib.Class1.getOfferPriceDetail_secondAttempt(result, 0);
+                            offerPrice = wallib.Class1.getOfferPriceDetail_secondAttempt(html, 0);
                             r = decimal.TryParse(offerPrice, out price);
                             if (r)
                             {
@@ -99,10 +100,10 @@ namespace wallib
                         {
                             item.Price = Convert.ToDecimal(offerPrice);
                         }
-                        bool shippingNotAvailable = ParseShippingNotAvailable(result);
+                        bool shippingNotAvailable = ParseShippingNotAvailable(html);
                         item.ShippingNotAvailable = shippingNotAvailable;
 
-                        item.FulfilledByWalmart = FulfilledByWalmart(result);
+                        item.FulfilledByWalmart = FulfilledByWalmart(html);
                     }
                     else
                     {
@@ -116,7 +117,36 @@ namespace wallib
             }
             return item;
         }
+        protected static bool IsVariation(string html)
+        {
+            int pos = html.IndexOf("Choose an option");
+            if (pos == -1)
+            {
+                pos = html.IndexOf("Actual Color:");
+                if (pos == -1)
+                {
+                    pos = html.IndexOf("Size:");
+                    if (pos == -1)
+                    {
+                        pos = html.IndexOf("Count:");
+                        return (pos > -1) ? true : false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                return true;
+            }
 
+        }
         protected static string parseItemNo(string html)
         {
             const string marker = "Walmart #";
@@ -386,6 +416,30 @@ namespace wallib
             if (price < freeShipping) price += shippingCost;
             decimal newprice = price * (decimal)px_mult;
             return newprice;
+        }
+        public static void GetMPN(string html)
+        {
+            /*
+             * Find div with class 'Specification-container'
+             * Then look for text, 'Manufacturer Part Number', which will be td element.
+             * Take text of next td element.
+             */
+
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            var node = doc.DocumentNode.SelectSingleNode("//div[@class='Specification-container']");
+            if (node != null)
+            {
+                var part = node.SelectSingleNode("//*[text()[contains(., 'Manufacturer Part Number')]]");
+                if (part != null)
+                {
+                    var match = part.NextSibling;
+                    if (match != null)
+                    {
+                        var t = match.InnerText;
+                    }
+                }
+            }
         }
 
     }
