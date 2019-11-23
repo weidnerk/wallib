@@ -434,7 +434,6 @@ namespace wallib
                 }
             }
         }
-
         public static string GetDescr(string html)
         {
             string result = null;
@@ -449,5 +448,15 @@ namespace wallib
             return result;
         }
 
+        protected static string SearchUrl(string search)
+        {
+            string url = string.Format("https://www.walmart.com/search/?query={0}", search);
+            return url;
+        }
+
+        public static bool SearchMatch(string url)
+        {
+            return false;
+        }
     }
 }
