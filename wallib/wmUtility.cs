@@ -34,7 +34,8 @@ namespace wallib
                     if (response.IsSuccessStatusCode)
                     {
                         item.IsVariation = IsVariation(html);
-                        GetMPN(html);
+                        item.MPN = GetMPN(html);
+                        item.Brand = GetBrand(html);
                         item.Description = GetDescr(html);
                         itemNo = parseItemNo(html);
                         item.ItemId = itemNo;
@@ -139,7 +140,6 @@ namespace wallib
             {
                 return true;
             }
-
         }
         protected static string parseItemNo(string html)
         {
@@ -411,14 +411,14 @@ namespace wallib
             decimal newprice = price * (decimal)px_mult;
             return newprice;
         }
-        public static void GetMPN(string html)
+        public static string GetMPN(string html)
         {
             /*
              * Find div with class 'Specification-container'
              * Then look for text, 'Manufacturer Part Number', which will be td element.
              * Take text of next td element.
              */
-
+            string MPN = null;
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
             var node = doc.DocumentNode.SelectSingleNode("//div[@class='Specification-container']");
@@ -430,10 +430,38 @@ namespace wallib
                     var match = part.NextSibling;
                     if (match != null)
                     {
-                        var t = match.InnerText;
+                        MPN = match.InnerText;
                     }
                 }
             }
+            return MPN;
+        }
+
+        public static string GetBrand(string html)
+        {
+            /*
+             * Find div with class 'Specification-container'
+             * Then look for text, 'Manufacturer Part Number', which will be td element.
+             * Take text of next td element.
+             */
+            string brand = null;
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            var node = doc.DocumentNode.SelectSingleNode("//div[@class='AboutDescriptionWrapper']");
+            if (node != null)
+            {
+                var part = node.SelectSingleNode("//*[text()[contains(., 'Brand')]]");
+                part = node.SelectSingleNode("//td[text()='Brand']");
+                if (part != null)
+                {
+                    var match = part.NextSibling;
+                    if (match != null)
+                    {
+                        brand = match.InnerText;
+                    }
+                }
+            }
+            return brand;
         }
         public static string GetDescr(string html)
         {
