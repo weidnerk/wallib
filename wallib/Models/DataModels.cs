@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace wallib.Models
 {
@@ -17,5 +18,11 @@ namespace wallib.Models
         public bool IsMultiVariationListing { get; set; }
     }
 
-
+    public class WalmartSearchProdIDResponse
+    {
+        [JsonProperty(PropertyName = "count")]
+        public int Count { get; set; }
+        [JsonProperty(PropertyName = "url")]
+        public string URL { get; set; }
+    }
 }

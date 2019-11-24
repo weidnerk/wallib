@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml;
+using wallib.Models;
 
 namespace wallib
 {
-    public class Class1
+    public class wmUtility
     {
         /// <summary>
         /// Give a product url, parse the detail
@@ -77,12 +78,12 @@ namespace wallib
                         //}
                         item.OutOfStock = outOfStock;
 
-                        string offerPrice = wallib.Class1.getOfferPriceDetail(html, 0);
+                        string offerPrice = wallib.wmUtility.getOfferPriceDetail(html, 0);
                         decimal price;
                         bool r = decimal.TryParse(offerPrice, out price);
                         if (!r)
                         {
-                            offerPrice = wallib.Class1.getOfferPriceDetail_secondAttempt(html, 0);
+                            offerPrice = wallib.wmUtility.getOfferPriceDetail_secondAttempt(html, 0);
                             r = decimal.TryParse(offerPrice, out price);
                             if (r)
                             {
@@ -457,6 +458,39 @@ namespace wallib
         public static bool SearchMatch(string url)
         {
             return false;
+        }
+
+        /// <summary>
+        /// Give a search term like a UPC or MPN, search walmart
+        /// </summary>
+        /// <param name="search"></param>
+        public static WalmartSearchProdIDResponse SearchProdID(string search)
+        {
+            var searchResponse = new WalmartSearchProdIDResponse();
+            string url = SearchUrl(search);
+
+            using (HttpClient client = new HttpClient())
+            {
+                using (HttpResponseMessage response = client.GetAsync(url).Result)
+                {
+                    using (HttpContent content = response.Content)
+                    {
+                        string result = content.ReadAsStringAsync().Result;
+                        HtmlDocument doc = new HtmlDocument();
+                        doc.LoadHtml(result);
+
+                        var nodes = doc.DocumentNode.SelectNodes("//a[@class='product-title-link line-clamp line-clamp-2']");
+                        if (nodes != null)
+                        {
+                            searchResponse.Count = nodes.Count;
+                            var h = nodes[0].GetAttributeValue("href", "");
+                            string detailUrl = "https://www.walmart.com/" + h;
+                            searchResponse.URL = detailUrl;
+                        }
+                    }
+                }
+            }
+            return searchResponse;
         }
     }
 }
