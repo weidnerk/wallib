@@ -436,7 +436,12 @@ namespace wallib
             }
             return MPN;
         }
-
+        /// <summary>
+        /// https://html-agility-pack.net/knowledge-base/30873180/csharp-htmlagilitypack-htmlnodecollection-selectnodes-not-working
+        /// https://stackoverflow.com/questions/30861203/html-agility-pack-cannot-find-element-using-xpath-but-it-is-working-fine-with-we
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         public static string GetBrand(string html)
         {
             /*
@@ -447,20 +452,45 @@ namespace wallib
             string brand = null;
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
-            var node = doc.DocumentNode.SelectSingleNode("//div[@class='AboutDescriptionWrapper']");
-            if (node != null)
+            
+            HtmlNode node;
+
+            node = doc.DocumentNode.SelectSingleNode("//a[@class='prod-brandName']");
+            if (node == null)
             {
-                var part = node.SelectSingleNode("//*[text()[contains(., 'Brand')]]");
-                part = node.SelectSingleNode("//td[text()='Brand']");
-                if (part != null)
+                node = doc.DocumentNode.SelectSingleNode("//div[@id='specifications']");
+                if (node == null)
                 {
-                    var match = part.NextSibling;
-                    if (match != null)
+                    node = doc.DocumentNode.SelectSingleNode("//div[@class='HomeSpecifications text-left']");
+                    node = doc.DocumentNode.SelectSingleNode("//table[@class='table table-striped-odd specification']");
+                    if (node == null)
                     {
-                        brand = match.InnerText;
+                        node = doc.DocumentNode.SelectSingleNode("//div[@class='Specification-containter']");
+                        if (node == null)
+                        {
+                            node = doc.DocumentNode.SelectSingleNode("//div[@class='AboutDescriptionWrapper']");
+                        }
+                    }
+                }
+                if (node != null)
+                {
+                    var part = node.SelectSingleNode("//*[text()[contains(., 'Brand')]]");
+                    part = node.SelectSingleNode("//td[text()='Brand']");
+                    if (part != null)
+                    {
+                        var match = part.NextSibling;
+                        if (match != null)
+                        {
+                            brand = match.InnerText;
+                        }
                     }
                 }
             }
+            else
+            {
+                brand = node.InnerText;
+            }
+            
             return brand;
         }
         public static string GetDescr(string html)
