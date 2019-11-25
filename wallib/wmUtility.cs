@@ -540,7 +540,7 @@ namespace wallib
                         var nodes = doc.DocumentNode.SelectNodes("//a[@class='product-title-link line-clamp line-clamp-2']");
                         if (nodes != null)
                         {
-                            searchResponse.Count = nodes.Count;
+                            searchResponse.Count = (byte)nodes.Count;
                             var h = nodes[0].GetAttributeValue("href", "");
                             string detailUrl = "https://www.walmart.com/" + h;
                             searchResponse.URL = detailUrl;
