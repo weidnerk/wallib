@@ -99,6 +99,10 @@ namespace wallib
                         item.ShippingNotAvailable = shippingNotAvailable;
 
                         item.FulfilledByWalmart = FulfilledByWalmart(html);
+                        if (!item.FulfilledByWalmart)
+                        {
+                            item.FulfilledByWalmart = FulfilledByWalmart_method2(html);
+                        }
                     }
                     else
                     {
@@ -306,6 +310,7 @@ namespace wallib
 
         protected static bool FulfilledByWalmart(string html)
         {
+            string str = dsutil.DSUtil.HTMLToString(html);
             const string marker = "\"sold_by\":{\"values\":[\"Walmart\"]";
             int pos = html.IndexOf(marker);
             if (pos > -1)
@@ -315,6 +320,17 @@ namespace wallib
                 const string shippedMarker = "shipped by</span></span><a class=\"seller-name\" href=\"https://help.walmart.com/\"";
                 pos = html.IndexOf(shippedMarker);
                 return (pos > -1) ? true : false;
+            }
+            return false;
+        }
+        protected static bool FulfilledByWalmart_method2(string html)
+        {
+            string str = dsutil.DSUtil.HTMLToString(html);
+            const string marker = "Sold &amp; shipped byWalmart";
+            int pos = str.IndexOf(marker);
+            if (pos > -1)
+            {
+                return true;
             }
             return false;
         }
