@@ -2,6 +2,7 @@
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml;
@@ -497,16 +498,15 @@ namespace wallib
                         var match = part.NextSibling;
                         if (match != null)
                         {
-                            brand = match.InnerText;
+                            brand = WebUtility.HtmlDecode(match.InnerText);
                         }
                     }
                 }
             }
             else
             {
-                brand = node.InnerText;
+                brand = WebUtility.HtmlDecode(node.InnerText);
             }
-            
             return brand;
         }
         public static string GetDescr(string html)
