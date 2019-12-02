@@ -38,6 +38,7 @@ namespace wallib
                         item.MPN = GetMPN(html);
                         item.Brand = GetBrand(html);
                         item.Description = GetDescr(html);
+                        item.Description = ModifyDescr(item.Description);
                         itemNo = parseItemNo(html);
                         item.ItemId = itemNo;
 
@@ -521,6 +522,22 @@ namespace wallib
                 result = node.InnerHtml;
             }
             return result;
+        }
+
+        public static string ModifyDescr(string descr)
+        {
+            //string marker = @"We aim to show you accurate product information.</span><span> Manufacturers,
+            //suppliers and others provide what you see here,
+            //and we have not verified it.";
+
+            string marker = @"<div class=""product-description-disclaimer""";
+            string endMarker = @"See our disclaimer </span></button></span></div></div>";
+
+            int pos = descr.IndexOf(marker);
+            int endPos = descr.IndexOf(endMarker, pos + 1) + endMarker.Length;
+            string toRemove = descr.Substring(pos, endPos - pos);
+            string output = descr.Replace(toRemove, "");
+            return output;
         }
 
         protected static string SearchUrl(string search)
