@@ -42,18 +42,8 @@ namespace wallib
                         itemNo = parseItemNo(html);
                         item.ItemId = itemNo;
 
-                        //string marker = "\"product-short-description-wrapper\" itemprop=\"description\">";
-                        //descr = parseDescr(html, marker, "<");
-                        //if (string.IsNullOrEmpty(descr))
-                        //{
-                        //    marker = "\"product_long_description\":{\"values\":[\"";
-                        //    descr = parseDescr(html, marker, "}");
-                        //}
-                        //item.Description = descr;
-
                         images = GetImages(html);
 
-                        // images = ParseImages(result);
                         if (images.Count == 0)
                         {
                             int stop = 1;
@@ -62,23 +52,9 @@ namespace wallib
                         {
                             item.PictureUrl = dsutil.DSUtil.ListToDelimited(images.ToArray(), ';');
                         }
-                        //Console.WriteLine("images: " + images.Count);
-                        if (item.Description.Contains("Minnie"))
-                        {
-                            int stop = 99;
-                        }
-
                         bool outOfStock = false;
 
-                        // NO, GetDetail cannot assume that a Listing record exists
-                        //if (!listing.Variation)
-                        //{
                         outOfStock = ParseOutOfStock(html);
-                        //}
-                        //else
-                        //{
-                        //    outOfStock = ParseOutOfStockVariation(result, listing.VariationDescription);
-                        //}
                         item.OutOfStock = outOfStock;
 
                         string offerPrice = wallib.wmUtility.getOfferPriceDetail(html, 0);
