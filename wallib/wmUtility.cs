@@ -185,32 +185,55 @@ namespace wallib
 
             int nextPos = 0;
             bool done = false;
+            bool isPNG;
+            bool isJPEG;
             do
             {
+                isPNG = false;
+                isJPEG = false;
                 int pos = toSearch.IndexOf("https://i5.walmartimages.com/asr/", nextPos);
                 if (pos > -1)
                 {
-                    int stop = toSearch.IndexOf("jpeg", pos + 1);
-                    if (stop > -1)
-                    {
-                        string pic = toSearch.Substring(pos, stop - pos + 4);
-                        images.Add(pic);
-                        nextPos = stop + 1;
-                    }
-                    else
-                    {
-                        stop = toSearch.IndexOf("png", pos + 1);
-                        if (stop > -1)
+                    int stop = -1;
+                    int stop_jpeg = toSearch.IndexOf("jpeg", pos + 1);
+                    int stop_png = toSearch.IndexOf("png", pos + 1);
+
+                    if (stop_jpeg > -1 && stop_png > -1) {
+                        if (stop_jpeg < stop_png)
                         {
-                            string pic = toSearch.Substring(pos, stop - pos + 3);
-                            images.Add(pic);
-                            nextPos = stop + 1;
+                            stop = stop_jpeg;
+                            isJPEG = true;
                         }
                         else
                         {
-                            // had weird case where the image url was a png file but the image was a black square - some glitch on their site
-                            done = true;
+                            stop = stop_png;
+                            isPNG = true;
                         }
+                    }
+                    else if (stop_jpeg > -1)
+                    {
+                        stop = stop_jpeg;
+                        isJPEG = true;
+                    }
+                    else if (stop_png > -1)
+                    {
+                        stop = stop_png;
+                        isPNG = true;
+                    }
+                    if (stop > -1)
+                    {
+                        int offset = 0;
+                        if (isJPEG)
+                        {
+                            offset = 4;
+                        }
+                        if (isPNG)
+                        {
+                            offset = 3;
+                        }
+                        string pic = toSearch.Substring(pos, stop - pos + offset);
+                        images.Add(pic);
+                        nextPos = stop + 1;
                     }
                 }
                 else
