@@ -235,6 +235,10 @@ namespace wallib
                         images.Add(pic);
                         nextPos = stop + 1;
                     }
+                    else
+                    {
+                        done = true;
+                    }
                 }
                 else
                 {
