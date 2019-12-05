@@ -17,9 +17,9 @@ namespace wallib
         /// </summary>
         /// <param name="url"></param>
         /// <returns>WalItem object, null if could not fetch item</returns>
-        public static async Task<WalItem> GetDetail(string url)
+        public static async Task<SupplierItem> GetDetail(string url)
         {
-            var item = new WalItem();
+            var item = new SupplierItem();
             string itemNo = null;
             string descr = null;
             var images = new List<string>();
@@ -34,13 +34,14 @@ namespace wallib
                     string html = await content.ReadAsStringAsync();
                     if (response.IsSuccessStatusCode)
                     {
+                        item.ItemURL = url;
                         item.IsVariation = IsVariation(html);
                         item.MPN = GetMPN(html);
-                        item.Brand = GetBrand(html);
+                        item.SupplierBrand = GetBrand(html);
                         item.Description = GetDescr(html);
                         item.Description = ModifyDescr(item.Description);
                         itemNo = parseItemNo(html);
-                        item.ItemId = itemNo;
+                        item.ItemID = itemNo;
 
                         images = GetImages(html);
 
@@ -50,7 +51,7 @@ namespace wallib
                         }
                         else
                         {
-                            item.PictureUrl = dsutil.DSUtil.ListToDelimited(images.ToArray(), ';');
+                            item.SupplierPicURL = dsutil.DSUtil.ListToDelimited(images.ToArray(), ';');
                         }
                         bool outOfStock = false;
 
@@ -66,20 +67,20 @@ namespace wallib
                             r = decimal.TryParse(offerPrice, out price);
                             if (r)
                             {
-                                item.Price = Convert.ToDecimal(offerPrice);
+                                item.SupplierPrice = Convert.ToDecimal(offerPrice);
                             }
                         }
                         else
                         {
-                            item.Price = Convert.ToDecimal(offerPrice);
+                            item.SupplierPrice = Convert.ToDecimal(offerPrice);
                         }
                         bool shippingNotAvailable = ParseShippingNotAvailable(html);
                         item.ShippingNotAvailable = shippingNotAvailable;
 
-                        item.FulfilledByWalmart = FulfilledByWalmart(html);
-                        if (!item.FulfilledByWalmart)
+                        item.SoldAndShippedBySupplier = FulfilledByWalmart(html);
+                        if (!item.SoldAndShippedBySupplier.Value)
                         {
-                            item.FulfilledByWalmart = FulfilledByWalmart_method2(html);
+                            item.SoldAndShippedBySupplier = FulfilledByWalmart_method2(html);
                         }
                     }
                     else
