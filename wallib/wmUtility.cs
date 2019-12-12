@@ -36,6 +36,7 @@ namespace wallib
                     {
                         item.ItemURL = url;
                         item.IsVariation = IsVariation(html);
+                        item.UPC = GetUPC(html);
                         item.MPN = GetMPN(html);
                         item.SupplierBrand = GetBrand(html);
                         item.Description = GetDescr(html);
@@ -432,6 +433,14 @@ namespace wallib
             if (price < freeShipping) price += shippingCost;
             decimal newprice = price * (decimal)px_mult;
             return newprice;
+        }
+        public static string GetUPC(string html)
+        {
+            string UPC = null;
+            string marker = "\"upc\":\"";
+            int pos = html.IndexOf(marker);
+            UPC = html.Substring(pos + marker.Length, 12);
+            return UPC;
         }
         public static string GetMPN(string html)
         {
