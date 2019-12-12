@@ -12,6 +12,8 @@ namespace wallib
 {
     public class wmUtility
     {
+        readonly static string _logfile = "log.txt";
+
         /// <summary>
         /// Give a product url, parse the detail
         /// </summary>
@@ -438,8 +440,16 @@ namespace wallib
         {
             string UPC = null;
             string marker = "\"upc\":\"";
-            int pos = html.IndexOf(marker);
-            UPC = html.Substring(pos + marker.Length, 12);
+            try
+            {
+                int pos = html.IndexOf(marker);
+                UPC = html.Substring(pos + marker.Length, 12);
+            }
+            catch (Exception exc)
+            {
+                string ret = dsutil.DSUtil.ErrMsg("GetUPC", exc);
+                dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
+            }
             return UPC;
         }
         public static string GetMPN(string html)
