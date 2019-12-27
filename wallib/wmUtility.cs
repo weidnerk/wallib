@@ -549,10 +549,6 @@ namespace wallib
 
         public static string ModifyDescr(string descr)
         {
-            //string marker = @"We aim to show you accurate product information.</span><span> Manufacturers,
-            //suppliers and others provide what you see here,
-            //and we have not verified it.";
-
             string marker = @"<div class=""product-description-disclaimer""";
             string endMarker = @"See our disclaimer </span></button></span></div></div>";
 
