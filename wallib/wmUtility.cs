@@ -36,6 +36,8 @@ namespace wallib
                     string html = await content.ReadAsStringAsync();
                     if (response.IsSuccessStatusCode)
                     {
+                        var f = GetFulfillment(html);
+                        var arriveby = ParseArrival(f);
                         item.ItemURL = url;
                         item.IsVariation = IsVariation(html);
                         item.UPC = GetUPC(html);
@@ -532,6 +534,83 @@ namespace wallib
                 brand = WebUtility.HtmlDecode(node.InnerText);
             }
             return brand;
+        }
+        public static string GetFulfillment(string html)
+        {
+            string result = null;
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            var node = doc.DocumentNode.SelectSingleNode("//div[@class='fulfillment-shipping-text']");
+            if (node != null)
+            {
+                var span = node.SelectSingleNode(".//span");
+                if (span != null)
+                {
+                    var delType = span.InnerText;
+                }
+
+                var p = node.SelectSingleNode(".//p");
+                if (p != null)
+                {
+                    result = p.InnerText;
+                }
+
+                // result = node.InnerText;
+            }
+            return result;
+        }
+
+        // Arrives by Tue, Jan 7
+        protected static DateTime? ParseArrival(string str)
+        {
+            DateTime? arrivalDate = null;
+            int pos = str.IndexOf(",");
+            if (pos > -1)
+            {
+                int month = ParseArrivalMonth(str.Substring(pos + 1));
+                int year = ParseArrivalYear(month);
+                int day = ParseArrivalDay(str.Substring(pos + 1));
+                arrivalDate = new DateTime(year, month, day);
+            }
+            return arrivalDate;
+        }
+        protected static int ParseArrivalYear(int month)
+        {
+            bool inDec = (DateTime.Now.Month == 12);
+            if (!inDec)
+            {
+                return DateTime.Now.Year;
+            }
+            if (month == 1)
+            {
+                return DateTime.Now.Year + 1;
+            }
+            return 0;
+        }
+        protected static int ParseArrivalDay(string str)
+        {
+            int pos = str.LastIndexOf(" ");
+            if (pos > -1)
+            {
+                string dayStr = str.Substring(pos + 1);
+                int day;
+                bool success = Int32.TryParse(dayStr, out day);
+                if (success)
+                {
+                    return day;
+                }
+            }
+            return 0;
+        }
+        protected static int ParseArrivalMonth(string str)
+        {
+            int pos = str.IndexOf("Jan");
+            if (pos > -1) return 1;
+
+            pos = str.IndexOf("Feb");
+            if (pos > -1) return 2;
+
+            return 0;
         }
         public static string GetDescr(string html)
         {
