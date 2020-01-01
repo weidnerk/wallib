@@ -37,6 +37,7 @@ namespace wallib
                     {
                         var f = GetFulfillment(html);
                         var arriveby = ParseArrival(f);
+                        item.Arrives = arriveby;
                         item.ItemURL = url;
                         item.IsVariation = IsVariation(html);
                         item.UPC = GetUPC(html);
