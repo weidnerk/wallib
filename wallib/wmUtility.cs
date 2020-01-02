@@ -20,6 +20,7 @@ namespace wallib
         /// <returns>WalItem object, null if could not fetch item</returns>
         public static async Task<SupplierItem> GetDetail(string url)
         {
+            dsmodels.DataModelsDB db = new dsmodels.DataModelsDB();
             var item = new SupplierItem();
             string itemNo = null;
             string descr = null;
@@ -43,6 +44,7 @@ namespace wallib
                         item.UPC = GetUPC(html);
                         item.MPN = GetMPN(html);
                         item.SupplierBrand = GetBrand(html);
+                        item.IsVERO = db.IsVERO(item.SupplierBrand);
                         item.Description = GetDescr(html);
                         item.Description = ModifyDescr(item.Description);
                         itemNo = parseItemNo(html);
