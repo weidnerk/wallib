@@ -448,6 +448,10 @@ namespace wallib
             {
                 int pos = html.IndexOf(marker);
                 UPC = html.Substring(pos + marker.Length, 12);
+                if (!IsValidUPC(UPC))
+                {
+                    return null;
+                }
             }
             catch (Exception exc)
             {
@@ -455,6 +459,21 @@ namespace wallib
                 dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
             }
             return UPC;
+        }
+        public static bool IsValidUPC(string UPC)
+        {
+            if (UPC.Length != 12)
+            {
+                return false;
+            }
+            for(int i = 0; i < UPC.Length; i++)
+            {
+                if (!Char.IsDigit(UPC, i))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         public static string GetMPN(string html)
         {
