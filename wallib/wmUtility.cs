@@ -37,8 +37,11 @@ namespace wallib
                     if (response.IsSuccessStatusCode)
                     {
                         var f = GetFulfillment(html);
-                        var arriveby = ParseArrival(f);
-                        item.Arrives = arriveby;
+                        if (f != null)
+                        {
+                            var arriveby = ParseArrival(f);
+                            item.Arrives = arriveby;
+                        }
                         item.ItemURL = url;
                         item.IsVariation = IsVariation(html);
                         item.UPC = GetUPC(html);
@@ -98,7 +101,10 @@ namespace wallib
             }
             catch (Exception exc)
             {
-                string err = exc.Message;
+                string header = string.Format("wm GetDetail: {0}", url);
+                string ret = dsutil.DSUtil.ErrMsg(header, exc);
+                dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
+                return null;
             }
             return item;
         }
