@@ -68,12 +68,18 @@ namespace wallib
                         outOfStock = ParseOutOfStock(html);
                         item.OutOfStock = outOfStock;
 
+                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                        // 01.09.2020
+                        // Regarding fetching price - at present seems that getOfferPriceDetail_thirdAttempt() is most accurate.
+                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
                         string offerPrice = wallib.wmUtility.getOfferPriceDetail(html, 0);
                         decimal price;
                         bool r = decimal.TryParse(offerPrice, out price);
                         if (!r)
                         {
-                            offerPrice = wallib.wmUtility.getOfferPriceDetail_secondAttempt(html, 0);
+                            // 01.09.2020 let's see if thirdAttempt is more accurate than 'secondAttempt'
+                            offerPrice = wallib.wmUtility.getOfferPriceDetail_thirdAttempt(html, 0);
                             r = decimal.TryParse(offerPrice, out price);
                             if (r)
                             {
@@ -81,7 +87,7 @@ namespace wallib
                             }
                             else
                             {
-                                offerPrice = wallib.wmUtility.getOfferPriceDetail_thirdAttempt(html, 0);
+                                offerPrice = wallib.wmUtility.getOfferPriceDetail_secondAttempt(html, 0);
                                 r = decimal.TryParse(offerPrice, out price);
                                 if (r)
                                 {
