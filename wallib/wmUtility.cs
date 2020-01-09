@@ -79,6 +79,15 @@ namespace wallib
                             {
                                 item.SupplierPrice = Convert.ToDecimal(offerPrice);
                             }
+                            else
+                            {
+                                offerPrice = wallib.wmUtility.getOfferPriceDetail_thirdAttempt(html, 0);
+                                r = decimal.TryParse(offerPrice, out price);
+                                if (r)
+                                {
+                                    item.SupplierPrice = Convert.ToDecimal(offerPrice);
+                                }
+                            }
                         }
                         else
                         {
@@ -413,8 +422,7 @@ namespace wallib
 
         public static string getOfferPriceDetail(string html, int startSearching)
         {
-            string priceMarker = "class=\"price-group\" role=\"text\" aria-label=\"$";
-            priceMarker = "\"CURRENT\":{\"price\":";
+            string priceMarker = "\"CURRENT\":{\"price\":";
             int endPricePos = 0;
             string offerPrice = null;
 
@@ -425,13 +433,23 @@ namespace wallib
         }
         public static string getOfferPriceDetail_secondAttempt(string html, int startSearching)
         {
-            string priceMarker = "class=\"price-group\" role=\"text\" aria-label=\"$";
-            priceMarker = "\"currentPrice\":";
+            string priceMarker = "\"currentPrice\":";
             int endPricePos = 0;
             string offerPrice = null;
 
             int pricePos = html.IndexOf(priceMarker, startSearching);
             endPricePos = html.IndexOf(",", pricePos + priceMarker.Length);
+            offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
+            return offerPrice;
+        }
+        public static string getOfferPriceDetail_thirdAttempt(string html, int startSearching)
+        {
+            string priceMarker = "itemprop=\"price\" content=\"";
+            int endPricePos = 0;
+            string offerPrice = null;
+
+            int pricePos = html.IndexOf(priceMarker, startSearching);
+            endPricePos = html.IndexOf("\"", pricePos + priceMarker.Length);
             offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
             return offerPrice;
         }
