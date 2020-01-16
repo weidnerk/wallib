@@ -50,19 +50,34 @@ namespace wallib
                         item.SupplierBrand = GetBrand(html);
                         item.IsVERO = db.IsVERO(item.SupplierBrand);
                         item.Description = GetDescr(html);
-                        item.Description = ModifyDescr(item.Description);
+                        if (!string.IsNullOrEmpty(item.Description))
+                        {
+                            item.Description = ModifyDescr(item.Description);
+                        }
+                        else
+                        {
+                            string ret = "ERROR GetDetail - no description parsed for " + url;
+                            dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
+                        }
                         itemNo = parseItemNo(html);
                         item.ItemID = itemNo;
 
                         images = GetImages(html);
-
-                        if (images.Count == 0)
+                        if (images != null)
                         {
-                            int stop = 1;
+                            if (images.Count == 0)
+                            {
+                                int stop = 1;
+                            }
+                            else
+                            {
+                                item.SupplierPicURL = dsutil.DSUtil.ListToDelimited(images.ToArray(), ';');
+                            }
                         }
                         else
                         {
-                            item.SupplierPicURL = dsutil.DSUtil.ListToDelimited(images.ToArray(), ';');
+                            string ret = "ERROR GetDetail - no images parsed for " + url;
+                            dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
                         }
                         bool outOfStock = false;
 
@@ -210,72 +225,79 @@ namespace wallib
             int endPos = 0;
 
             startPos = html.IndexOf(startMarker);
-            endPos = html.IndexOf(endMarker, startPos);
-            string toSearch = html.Substring(startPos, endPos - startPos);
-
-            int nextPos = 0;
-            bool done = false;
-            bool isPNG;
-            bool isJPEG;
-            do
+            if (startPos > -1)
             {
-                isPNG = false;
-                isJPEG = false;
-                int pos = toSearch.IndexOf("https://i5.walmartimages.com/asr/", nextPos);
-                if (pos > -1)
-                {
-                    int stop = -1;
-                    int stop_jpeg = toSearch.IndexOf("jpeg", pos + 1);
-                    int stop_png = toSearch.IndexOf("png", pos + 1);
+                endPos = html.IndexOf(endMarker, startPos);
+                string toSearch = html.Substring(startPos, endPos - startPos);
 
-                    if (stop_jpeg > -1 && stop_png > -1) {
-                        if (stop_jpeg < stop_png)
+                int nextPos = 0;
+                bool done = false;
+                bool isPNG;
+                bool isJPEG;
+                do
+                {
+                    isPNG = false;
+                    isJPEG = false;
+                    int pos = toSearch.IndexOf("https://i5.walmartimages.com/asr/", nextPos);
+                    if (pos > -1)
+                    {
+                        int stop = -1;
+                        int stop_jpeg = toSearch.IndexOf("jpeg", pos + 1);
+                        int stop_png = toSearch.IndexOf("png", pos + 1);
+
+                        if (stop_jpeg > -1 && stop_png > -1)
+                        {
+                            if (stop_jpeg < stop_png)
+                            {
+                                stop = stop_jpeg;
+                                isJPEG = true;
+                            }
+                            else
+                            {
+                                stop = stop_png;
+                                isPNG = true;
+                            }
+                        }
+                        else if (stop_jpeg > -1)
                         {
                             stop = stop_jpeg;
                             isJPEG = true;
                         }
-                        else
+                        else if (stop_png > -1)
                         {
                             stop = stop_png;
                             isPNG = true;
                         }
-                    }
-                    else if (stop_jpeg > -1)
-                    {
-                        stop = stop_jpeg;
-                        isJPEG = true;
-                    }
-                    else if (stop_png > -1)
-                    {
-                        stop = stop_png;
-                        isPNG = true;
-                    }
-                    if (stop > -1)
-                    {
-                        int offset = 0;
-                        if (isJPEG)
+                        if (stop > -1)
                         {
-                            offset = 4;
+                            int offset = 0;
+                            if (isJPEG)
+                            {
+                                offset = 4;
+                            }
+                            if (isPNG)
+                            {
+                                offset = 3;
+                            }
+                            string pic = toSearch.Substring(pos, stop - pos + offset);
+                            images.Add(pic);
+                            nextPos = stop + 1;
                         }
-                        if (isPNG)
+                        else
                         {
-                            offset = 3;
+                            done = true;
                         }
-                        string pic = toSearch.Substring(pos, stop - pos + offset);
-                        images.Add(pic);
-                        nextPos = stop + 1;
                     }
                     else
                     {
                         done = true;
                     }
-                }
-                else
-                {
-                    done = true;
-                }
-            } while (!done);
-
+                } while (!done);
+            }
+            else
+            {
+                return null;
+            }
             return images;
         }
 
