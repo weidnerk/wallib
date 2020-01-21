@@ -706,10 +706,15 @@ namespace wallib
             string endMarker = @"See our disclaimer </span></button></span></div></div>";
 
             int pos = descr.IndexOf(marker);
-            int endPos = descr.IndexOf(endMarker, pos + 1) + endMarker.Length;
-            string toRemove = descr.Substring(pos, endPos - pos);
-            string output = descr.Replace(toRemove, "");
-            return output;
+            int endPos = descr.IndexOf(endMarker, pos + marker.Length);
+            if (endPos > -1)
+            {
+                endPos += endMarker.Length;
+                string toRemove = descr.Substring(pos, endPos - pos);
+                string output = descr.Replace(toRemove, "");
+                return output;
+            }
+            return null;
         }
 
         protected static string SearchUrl(string search)
