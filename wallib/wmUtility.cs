@@ -14,6 +14,34 @@ namespace wallib
         readonly static string _logfile = "log.txt";
 
         /// <summary>
+        /// But this is a problem since first has to logon to Walmart.
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        public static async Task GetOrder(string url)
+        {
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                using (HttpResponseMessage response = await client.GetAsync(url))
+                using (HttpContent content = response.Content)
+                {
+                    // ... Read the string.
+                    string html = await content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                string header = string.Format("GetOrder", url);
+                string ret = dsutil.DSUtil.ErrMsg(header, exc);
+                dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
+            }
+        }
+
+        /// <summary>
         /// Give a product url, parse the detail
         /// </summary>
         /// <param name="url"></param>
