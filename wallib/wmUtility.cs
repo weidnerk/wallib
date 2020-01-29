@@ -743,7 +743,7 @@ namespace wallib
                 string output = descr.Replace(toRemove, "");
                 return output;
             }
-            return null;
+            return descr;
         }
 
         protected static string SearchUrl(string search)
