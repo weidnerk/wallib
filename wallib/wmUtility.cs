@@ -716,6 +716,7 @@ namespace wallib
         }
         public static string GetDescr(string html)
         {
+            string marker = @"<div id=""product-about""";
             string result = null;
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
