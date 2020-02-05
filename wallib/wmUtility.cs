@@ -91,6 +91,13 @@ namespace wallib
                         item.ItemID = itemNo;
 
                         images = GetImages(html);
+
+                        /*
+                        GetVariationImages(html);
+                        GetModelNumbers(html);
+                        GetBaseURL(html);
+                        */
+
                         if (images != null)
                         {
                             if (images.Count == 0)
@@ -244,6 +251,10 @@ namespace wallib
             return null;
         }
 
+        /// <summary>
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         protected static List<string> GetImages(string html)
         {
             var images = new List<string>();
@@ -329,6 +340,77 @@ namespace wallib
             return images;
         }
 
+        /// It looks like this method still holds true for variations
+        /// To get the individual variation images such backwards from startMarker for \"swatch\":
+        /// After the actual image URL, you'll see a phrase like \"images\":0
+        /// When you get to '0' that's the first image.
+
+        protected static List<string> GetVariationImages(string html)
+        {
+            var images = new List<string>();
+            string endMarker = "Brand Link";
+            string startMarker = "AVAILABLE";
+
+            int endMarkerPos = html.IndexOf(endMarker);
+            int startMarkerPos = html.LastIndexOf(startMarker, endMarkerPos);
+
+            int pos = 0;
+            int startPos = startMarkerPos;
+            do
+            {
+                pos = html.IndexOf("https://i5.walmartimages.com/asr/", startPos);
+                if (pos > -1)
+                {
+                    int endPos = html.IndexOf(".jpeg", pos);
+                    string imgName = html.Substring(pos, (endPos - pos) + ".jpeg".Length);
+                    images.Add(imgName);
+                    startPos = endPos + 1;
+                }
+            } while (pos > -1);
+            return images;
+        }
+        /// <summary>
+        /// Variations have model numbers and then you can construct it's URL.
+        /// Note that you have to use GetBaseURL() to get the landing page URL and thus model number.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
+        protected static List<string> GetModelNumbers(string html)
+        {
+            var modelNumbers = new List<string>();
+            string startMarker = "specificationHighlights";
+            string modelNumberMarker = "usItemId";
+
+            int startPos = html.IndexOf(startMarker);
+            int modelNumberPos = 0;
+            do
+            {
+                modelNumberPos = html.IndexOf(modelNumberMarker, startPos);
+                if (modelNumberPos > -1)
+                {
+                    int endPos = html.IndexOf(",", modelNumberPos + 1);
+                    string modelNumber = html.Substring(modelNumberPos + modelNumberMarker.Length + 3, endPos - (modelNumberPos + modelNumberMarker.Length + 5));
+                    startPos = endPos + 1;
+                    modelNumbers.Add(modelNumber);
+                }
+            } while (modelNumberPos > -1);
+            return modelNumbers;
+        }
+
+        /// <summary>
+        /// The landing page of the product of a variation is on the first variation which this provides (and already parsed by the scraper).
+        /// This method gets the "landing page" URL as well so we can then extract the model number.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
+        protected static string GetBaseURL(string html)
+        {
+            string marker = "\"canonicalUrl\":\"";
+            int pos = html.IndexOf(marker);
+            int endPos = html.IndexOf(",", pos + 1);
+            string baseURL = html.Substring(pos + marker.Length, endPos - (pos + marker.Length + 1));
+            return baseURL;
+        }
         protected static List<string> ParseImages(string html)
         {
             const string marker = "assetSizeUrls\":{\"thumb\":\"";
