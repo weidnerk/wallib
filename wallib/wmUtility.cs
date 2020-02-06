@@ -356,21 +356,29 @@ namespace wallib
             string startMarker = "AVAILABLE";
 
             int endMarkerPos = html.IndexOf(endMarker);
-            int startMarkerPos = html.LastIndexOf(startMarker, endMarkerPos);
-
-            int pos = 0;
-            int startPos = startMarkerPos;
-            do
+            if (endMarkerPos > -1)
             {
-                pos = html.IndexOf("https://i5.walmartimages.com/asr/", startPos);
-                if (pos > -1)
+                int startMarkerPos = html.LastIndexOf(startMarker, endMarkerPos);
+                if (startMarkerPos > -1)
                 {
-                    int endPos = html.IndexOf(",", pos);
-                    string imgName = html.Substring(pos, (endPos - pos - 1)).Replace("\"", string.Empty).Replace("}", string.Empty).Replace("]", string.Empty);
-                    images.Add(imgName);
-                    startPos = endPos + 1;
+                    int pos = 0;
+                    int startPos = startMarkerPos;
+                    do
+                    {
+                        pos = html.IndexOf("https://i5.walmartimages.com/asr/", startPos);
+                        if (pos > -1)
+                        {
+                            int endPos = html.IndexOf(",", pos);
+                            if (endPos > -1)
+                            {
+                                string imgName = html.Substring(pos, (endPos - pos - 1)).Replace("\"", string.Empty).Replace("}", string.Empty).Replace("]", string.Empty);
+                                images.Add(imgName);
+                                startPos = endPos + 1;
+                            }
+                        }
+                    } while (pos > -1);
                 }
-            } while (pos > -1);
+            }
             return images;
         }
         /// <summary>
