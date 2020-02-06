@@ -92,11 +92,14 @@ namespace wallib
 
                         images = GetImages(html);
 
-                        /*
-                        GetVariationImages(html);
-                        GetModelNumbers(html);
-                        GetBaseURL(html);
-                        */
+                        if (item.IsVariation ?? false)
+                        {
+                            item.VariationPicURL = GetVariationImages(html);
+                            /*
+                            GetModelNumbers(html);
+                            GetBaseURL(html);
+                            */
+                        }
 
                         if (images != null)
                         {
@@ -361,8 +364,8 @@ namespace wallib
                 pos = html.IndexOf("https://i5.walmartimages.com/asr/", startPos);
                 if (pos > -1)
                 {
-                    int endPos = html.IndexOf(".jpeg", pos);
-                    string imgName = html.Substring(pos, (endPos - pos) + ".jpeg".Length);
+                    int endPos = html.IndexOf(",", pos);
+                    string imgName = html.Substring(pos, (endPos - pos - 1)).Replace("\"", string.Empty).Replace("}", string.Empty).Replace("]", string.Empty);
                     images.Add(imgName);
                     startPos = endPos + 1;
                 }
