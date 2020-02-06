@@ -255,6 +255,7 @@ namespace wallib
         }
 
         /// <summary>
+        /// TODO: why search for JPEG or PNG?  Just search for comma.
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
