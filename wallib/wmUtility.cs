@@ -823,10 +823,16 @@ namespace wallib
             return result;
         }
 
+        /// <summary>
+        /// Clean up description best we can.
+        /// </summary>
+        /// <param name="descr"></param>
+        /// <returns></returns>
         public static string ModifyDescr(string descr)
         {
+            // Remove product disclaimer
             string marker = @"<div class=""product-description-disclaimer""";
-            string endMarker = @"See our disclaimer </span></button></span></div></div>";
+            string endMarker = @"See our disclaimer </span></span></button></span></div></div>";
 
             int pos = descr.IndexOf(marker);
             int endPos = descr.IndexOf(endMarker, pos + marker.Length);
