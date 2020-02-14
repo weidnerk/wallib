@@ -64,7 +64,7 @@ namespace wallib
                     string html = await content.ReadAsStringAsync();
                     if (response.IsSuccessStatusCode)
                     {
-                        var f = GetFulfillment(html);
+                        var f = GetArrivesBy(html);
                         if (f != null)
                         {
                             var arriveby = ParseArrival(f);
@@ -731,7 +731,7 @@ namespace wallib
             }
             return brand;
         }
-        public static string GetFulfillment(string html)
+        public static string GetArrivesBy(string html)
         {
             string result = null;
             HtmlDocument doc = new HtmlDocument();
@@ -805,6 +805,36 @@ namespace wallib
 
             pos = str.IndexOf("Feb");
             if (pos > -1) return 2;
+
+            pos = str.IndexOf("Mar");
+            if (pos > -1) return 3;
+
+            pos = str.IndexOf("Apr");
+            if (pos > -1) return 4;
+
+            pos = str.IndexOf("May");
+            if (pos > -1) return 5;
+
+            pos = str.IndexOf("Jun");
+            if (pos > -1) return 6;
+
+            pos = str.IndexOf("Jul");
+            if (pos > -1) return 7;
+
+            pos = str.IndexOf("Aug");
+            if (pos > -1) return 8;
+
+            pos = str.IndexOf("Sep");
+            if (pos > -1) return 9;
+
+            pos = str.IndexOf("Oct");
+            if (pos > -1) return 10;
+
+            pos = str.IndexOf("Nov");
+            if (pos > -1) return 11;
+
+            pos = str.IndexOf("Dec");
+            if (pos > -1) return 12;
 
             return 0;
         }
