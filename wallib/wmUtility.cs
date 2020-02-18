@@ -919,5 +919,28 @@ namespace wallib
             }
             return searchResponse;
         }
+
+        protected static decimal wmBreakEvenPrice(decimal supplierPrice, decimal minFreeShipping, decimal shipping)
+        {
+            if (supplierPrice < minFreeShipping)
+            {
+                supplierPrice += shipping;
+            }
+            decimal p = (supplierPrice + 0.30m) / (1m - 0.029m - 0.0915m);
+            return p;
+        }
+
+        /// <summary>
+        /// https://community.ebay.com/t5/Selling/Excel-Spreadsheet-formula-to-break-even-with-eBay-sales/qaq-p/23249463
+        /// Markup b/e price by pctProfit percent
+        /// </summary>
+        /// <param name="supplierPrice"></param>
+        /// <returns></returns>
+        public static PriceProfit wmNewPrice(decimal supplierPrice, double pctProfit, decimal shippingCost)
+        {
+            decimal breakeven = wmBreakEvenPrice(supplierPrice, 35.0m, shippingCost);
+            var proposePrice = breakeven * (1m + ((decimal)pctProfit * 0.01m));
+            return new PriceProfit { BreakEven = breakeven, ProposePrice = proposePrice };
+        }
     }
 }
