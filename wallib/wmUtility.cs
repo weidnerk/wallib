@@ -936,9 +936,9 @@ namespace wallib
         /// </summary>
         /// <param name="supplierPrice"></param>
         /// <returns></returns>
-        public static PriceProfit wmNewPrice(decimal supplierPrice, double pctProfit, decimal shippingCost)
+        public static PriceProfit wmNewPrice(decimal supplierPrice, double pctProfit, decimal shippingCost, decimal freeShippingMin)
         {
-            decimal breakeven = wmBreakEvenPrice(supplierPrice, 35.0m, shippingCost);
+            decimal breakeven = wmBreakEvenPrice(supplierPrice, freeShippingMin, shippingCost);
             var proposePrice = breakeven * (1m + ((decimal)pctProfit * 0.01m));
             return new PriceProfit { BreakEven = breakeven, ProposePrice = proposePrice };
         }
