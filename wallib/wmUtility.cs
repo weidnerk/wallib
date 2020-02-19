@@ -920,13 +920,13 @@ namespace wallib
             return searchResponse;
         }
 
-        protected static decimal wmBreakEvenPrice(decimal supplierPrice, decimal minFreeShipping, decimal shipping)
+        protected static decimal wmBreakEvenPrice(decimal supplierPrice, decimal minFreeShipping, decimal shipping, double eBayPct)
         {
             if (supplierPrice < minFreeShipping)
             {
                 supplierPrice += shipping;
             }
-            decimal p = (supplierPrice + 0.30m) / (1m - 0.029m - 0.0915m);
+            decimal p = (supplierPrice + 0.30m) / (1m - 0.029m - ((decimal)eBayPct * 0.01m));
             return p;
         }
 
@@ -936,9 +936,9 @@ namespace wallib
         /// </summary>
         /// <param name="supplierPrice"></param>
         /// <returns></returns>
-        public static PriceProfit wmNewPrice(decimal supplierPrice, double pctProfit, decimal shippingCost, decimal freeShippingMin)
+        public static PriceProfit wmNewPrice(decimal supplierPrice, double pctProfit, decimal shippingCost, decimal freeShippingMin, double eBayPct)
         {
-            decimal breakeven = wmBreakEvenPrice(supplierPrice, freeShippingMin, shippingCost);
+            decimal breakeven = wmBreakEvenPrice(supplierPrice, freeShippingMin, shippingCost, eBayPct);
             var proposePrice = breakeven * (1m + ((decimal)pctProfit * 0.01m));
             return new PriceProfit { BreakEven = breakeven, ProposePrice = proposePrice };
         }
