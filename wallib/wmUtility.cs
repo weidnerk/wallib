@@ -46,7 +46,7 @@ namespace wallib
         /// </summary>
         /// <param name="url"></param>
         /// <returns>WalItem object, null if could not fetch item</returns>
-        public static async Task<SupplierItem> GetDetail(string url)
+        public static async Task<SupplierItem> GetDetail(string url, int imgLimit)
         {
             dsmodels.DataModelsDB db = new dsmodels.DataModelsDB();
             var item = new SupplierItem();
@@ -90,7 +90,7 @@ namespace wallib
                         itemNo = parseItemNo(html);
                         item.ItemID = itemNo;
 
-                        images = GetImages(html);
+                        images = GetImages(html, imgLimit);
 
                         if (item.IsVariation ?? false)
                         {
@@ -259,7 +259,7 @@ namespace wallib
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
-        protected static List<string> GetImages(string html)
+        protected static List<string> GetImages(string html, int imgLimit)
         {
             var images = new List<string>();
             string startMarker = "Brand Link";
@@ -340,6 +340,13 @@ namespace wallib
             else
             {
                 return null;
+            }
+            if (images.Count > imgLimit)
+            {
+                do
+                {
+                    images.RemoveAt(imgLimit);
+                } while (images.Count > imgLimit);
             }
             return images;
         }
