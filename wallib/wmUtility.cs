@@ -73,6 +73,7 @@ namespace wallib
                         item.SourceID = 1;
                         item.ItemURL = url;
                         item.IsVariation = IsVariation(html);
+                        item.IsFreightShipping = IsFreightShipping(html);
                         item.UPC = GetUPC(html);
                         item.MPN = GetMPN(html);
                         item.SupplierBrand = GetBrand(html);
@@ -200,6 +201,19 @@ namespace wallib
                 {
                     return true;
                 }
+            }
+            else
+            {
+                return true;
+            }
+        }
+        protected static bool IsFreightShipping(string html)
+        {
+            const string marker = "freight delivery";
+            int pos = html.IndexOf(marker);
+            if (pos == -1)
+            {
+                return false;
             }
             else
             {
