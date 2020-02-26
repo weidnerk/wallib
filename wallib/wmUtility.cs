@@ -73,6 +73,13 @@ namespace wallib
                         item.SourceID = 1;
                         item.ItemURL = url;
                         item.IsVariation = IsVariation(html);
+                        if (item.IsVariation.Value)
+                        {
+                            string variationName = null;
+                            var variations = GetVariations(html, out variationName);
+                            item.VariationName = variationName;
+                            item.Variation = variations;
+                        }
                         item.IsFreightShipping = IsFreightShipping(html);
                         item.UPC = GetUPC(html);
                         item.MPN = GetMPN(html);
@@ -206,6 +213,75 @@ namespace wallib
             {
                 return true;
             }
+        }
+        protected static List<string> GetVariations(string html, out string variationName)
+        {
+            variationName = null;
+            var variations = new List<string>();
+            string optionMarker = "Choose an option";
+            string variationNameMarker = "id=\"";
+            string markerEnd = "\"";
+            string variationMarker = "input type=\"radio\" aria-label=\"";
+
+            string sectionMarker = "<div class=\"variants__list\"";
+            string sectionEndMarker = "</label></div>";
+
+            try
+            {
+                // cut the section that has the radio group of variations
+                int sectionPos = html.IndexOf(sectionMarker);
+                if (sectionPos > -1)
+                {
+                    int sectionEndPos = html.IndexOf(sectionEndMarker, sectionPos + 1);
+                    if (sectionEndPos > -1)
+                    {
+                        string section = html.Substring(sectionPos, sectionEndPos - sectionPos);
+
+                        int optionPos = html.IndexOf(optionMarker);
+                        if (optionPos > -1)
+                        {
+                            // get the variation name such as 'Actual color'
+                            int variationNamePos = html.IndexOf(variationNameMarker, optionPos);
+                            if (variationNamePos > -1)
+                            {
+                                variationNamePos += variationNameMarker.Length;
+                                int variationNameEndPos = html.IndexOf(markerEnd, variationNamePos);
+                                if (variationNameEndPos > -1)
+                                {
+                                    variationName = html.Substring(variationNamePos, variationNameEndPos - variationNamePos);
+                                    int variationPos = 1;
+
+                                    // get the actual variations
+                                    do
+                                    {
+                                        variationPos = section.IndexOf(variationMarker, variationPos);
+                                        if (variationPos > -1)
+                                        {
+                                            variationPos += variationMarker.Length;
+                                            int variationEndPos = section.IndexOf(markerEnd, variationPos);
+                                            if (variationEndPos > -1)
+                                            {
+                                                string variation = section.Substring(variationPos, variationEndPos - variationPos);
+                                                variations.Add(variation);
+                                                variationPos = variationEndPos + 1;
+                                            }
+                                            else break;
+                                        }
+                                        else break;
+                                    } while (variationPos > -1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                string header = string.Format("GetVariations");
+                string ret = dsutil.DSUtil.ErrMsg(header, exc);
+                dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
+            }
+            return variations;
         }
         protected static bool IsFreightShipping(string html)
         {
