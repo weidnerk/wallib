@@ -44,9 +44,9 @@ namespace wallib
         /// <summary>
         /// Give a product url, parse the detail
         /// </summary>
-        /// <param name="url"></param>
+        /// <param name="URL"></param>
         /// <returns>WalItem object, null if could not fetch item</returns>
-        public static async Task<SupplierItem> GetDetail(string url, int imgLimit)
+        public static async Task<SupplierItem> GetDetail(string URL, int imgLimit)
         {
             dsmodels.DataModelsDB db = new dsmodels.DataModelsDB();
             var item = new SupplierItem();
@@ -56,8 +56,9 @@ namespace wallib
 
             try
             {
+                URL = CleanURL(URL);
                 using (HttpClient client = new HttpClient())
-                using (HttpResponseMessage response = await client.GetAsync(url))
+                using (HttpResponseMessage response = await client.GetAsync(URL))
                 using (HttpContent content = response.Content)
                 {
                     // ... Read the string.
@@ -71,7 +72,7 @@ namespace wallib
                             item.Arrives = arriveby;
                         }
                         item.SourceID = 1;
-                        item.ItemURL = url;
+                        item.ItemURL = URL;
                         item.IsVariation = IsVariation(html);
                         if (item.IsVariation.Value)
                         {
@@ -79,6 +80,9 @@ namespace wallib
                             var variations = GetVariations(html, out variationName);
                             item.VariationName = variationName;
                             item.Variation = variations;
+
+                            item.usItemId = Collect_usItemId(URL, html);
+                            item.SupplierVariation = CreateVariations(URL, item.usItemId);
                         }
                         item.IsFreightShipping = IsFreightShipping(html);
                         item.UPC = GetUPC(html);
@@ -92,7 +96,7 @@ namespace wallib
                         }
                         else
                         {
-                            string ret = "ERROR GetDetail - no description parsed for " + url;
+                            string ret = "ERROR GetDetail - no description parsed for " + URL;
                             dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
                         }
                         itemNo = parseItemNo(html);
@@ -122,7 +126,7 @@ namespace wallib
                         }
                         else
                         {
-                            string ret = "ERROR GetDetail - no images parsed for " + url;
+                            string ret = "ERROR GetDetail - no images parsed for " + URL;
                             dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
                         }
                         bool outOfStock = false;
@@ -134,33 +138,7 @@ namespace wallib
                         // 01.09.2020
                         // Regarding fetching price - at present seems that getOfferPriceDetail_thirdAttempt() is most accurate.
                         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-                        string offerPrice = wallib.wmUtility.getOfferPriceDetail(html, 0);
-                        decimal price;
-                        bool r = decimal.TryParse(offerPrice, out price);
-                        if (!r)
-                        {
-                            // 01.09.2020 let's see if thirdAttempt is more accurate than 'secondAttempt'
-                            offerPrice = wallib.wmUtility.getOfferPriceDetail_thirdAttempt(html, 0);
-                            r = decimal.TryParse(offerPrice, out price);
-                            if (r)
-                            {
-                                item.SupplierPrice = Convert.ToDecimal(offerPrice);
-                            }
-                            else
-                            {
-                                offerPrice = wallib.wmUtility.getOfferPriceDetail_secondAttempt(html, 0);
-                                r = decimal.TryParse(offerPrice, out price);
-                                if (r)
-                                {
-                                    item.SupplierPrice = Convert.ToDecimal(offerPrice);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            item.SupplierPrice = Convert.ToDecimal(offerPrice);
-                        }
+                        item.SupplierPrice = GetPrice(html);
                         bool shippingNotAvailable = ParseShippingNotAvailable(html);
                         item.ShippingNotAvailable = shippingNotAvailable;
 
@@ -178,12 +156,132 @@ namespace wallib
             }
             catch (Exception exc)
             {
-                string header = string.Format("wm GetDetail: {0}", url);
+                string header = string.Format("wm GetDetail: {0}", URL);
                 string ret = dsutil.DSUtil.ErrMsg(header, exc);
                 dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
                 return null;
             }
             return item;
+        }
+        protected static List<SupplierVariation> CreateVariations(string URL, List<string> itemIDs)
+        {
+            var supplierVariation = new List<SupplierVariation>();
+            foreach(string itemID in itemIDs)
+            {
+                var variation = new SupplierVariation();
+                variation.URL = CreateVariationURL(URL, itemID);
+                supplierVariation.Add(variation);
+            }
+            return supplierVariation;
+            
+        }
+        protected static decimal? GetPrice(string html)
+        {
+            string offerPrice = wallib.wmUtility.getOfferPriceDetail(html, 0);
+            decimal price;
+            bool r = decimal.TryParse(offerPrice, out price);
+            if (!r)
+            {
+                // 01.09.2020 let's see if thirdAttempt is more accurate than 'secondAttempt'
+                offerPrice = wallib.wmUtility.getOfferPriceDetail_thirdAttempt(html, 0);
+                r = decimal.TryParse(offerPrice, out price);
+                if (!r)
+                {
+                    offerPrice = wallib.wmUtility.getOfferPriceDetail_secondAttempt(html, 0);
+                    r = decimal.TryParse(offerPrice, out price);
+                    if (!r)
+                    {
+                        return null;
+                    }
+                }
+            }
+            else
+            {
+                price = Convert.ToDecimal(offerPrice);
+            }
+            return price;
+        }
+
+        /// <summary>
+        /// Collect the walmart itemIds for each variation.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
+        protected static List<string> Collect_usItemId(string URL, string html)
+        {
+            var itemNo = new List<string>();
+            string marker = "specificationHighlights";
+            string usItemIdMarker = "usItemId\":\"";
+            string endMarker = "\"";
+
+            itemNo.Add(GetItemIDFromURL(URL));
+            int pos = html.IndexOf(marker);
+            bool done = false;
+            while (!done)
+            {
+                int itemMarkerPos = html.IndexOf(usItemIdMarker, pos + 1);
+                if (itemMarkerPos > -1)
+                {
+                    itemMarkerPos += usItemIdMarker.Length;
+                    int itemMarkerEndPos = html.IndexOf(endMarker, itemMarkerPos);
+                    string usItemId = html.Substring(itemMarkerPos, itemMarkerEndPos - itemMarkerPos);
+                    itemNo.Add(usItemId);
+                    pos = itemMarkerEndPos + 1;
+                }
+                else done = true;
+            }
+            return itemNo;
+        }
+
+        /// <summary>
+        /// Note that when calculatematch looks for the item and finds a variation, the url returned includes the first itemId,
+        /// 
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        protected static string CleanURL(string url)
+        {
+            string newURL = url;
+            string marker = "?selected=true";
+            int pos = url.IndexOf(marker);
+            if (pos > -1)
+            {
+                newURL = url.Remove(pos);
+            }
+            return newURL;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="URL">Original form of URL as captured by scraper and calculator, meaning has initial itemID but no selection</param>
+        /// <param name="itemID"></param>
+        /// <returns></returns>
+        protected static string CreateVariationURL(string URL, string itemID)
+        {
+            string newURL = null;
+            int pos = URL.LastIndexOf("/");
+            if (pos > -1)
+            {
+                newURL = URL.Substring(0, pos);
+                newURL = newURL + "/" + itemID + "?selected=true";
+            }
+            return newURL; ;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="URL">Original form of URL as captured by scraper and calculator, meaning has initial itemID but no selection</param>
+        /// <returns></returns>
+        protected static string GetItemIDFromURL(string URL)
+        {
+            string itemID = null;
+            int pos = URL.LastIndexOf("/");
+            if (pos > -1)
+            {
+                itemID = URL.Substring(pos + 1, URL.Length - (pos + 1));
+            }
+            return itemID;
         }
         protected static bool IsVariation(string html)
         {
@@ -214,6 +312,13 @@ namespace wallib
                 return true;
             }
         }
+
+        /// <summary>
+        /// Get the names of the variations (like 'Black', 'Brown')
+        /// </summary>
+        /// <param name="html"></param>
+        /// <param name="variationName"></param>
+        /// <returns></returns>
         protected static List<string> GetVariations(string html, out string variationName)
         {
             variationName = null;
