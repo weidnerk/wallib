@@ -76,13 +76,10 @@ namespace wallib
                         item.IsVariation = IsVariation(html);
                         if (item.IsVariation.Value)
                         {
-                            string variationName = null;
-                            var variations = GetVariations(html, out variationName);
-                            item.VariationName = variationName;
-                            item.Variation = variations;
-
+                            item.VariationName = GetVariationName(html);
                             item.usItemId = Collect_usItemId(URL, html);
-                            item.SupplierVariation = CreateVariations(URL, item.usItemId);
+                            item.SupplierVariation = InitSupplierVariations(URL, item.usItemId);
+                            FetchAndFillVariations(item.SupplierVariation);
                         }
                         item.IsFreightShipping = IsFreightShipping(html);
                         item.UPC = GetUPC(html);
@@ -163,13 +160,32 @@ namespace wallib
             }
             return item;
         }
-        protected static List<SupplierVariation> CreateVariations(string URL, List<string> itemIDs)
+        protected static void FetchAndFillVariations(List<SupplierVariation> supplierVariation)
+        {
+            foreach (var sv in supplierVariation)
+            {
+                string url = sv.URL;
+                HttpClient var_client = new HttpClient();
+                using (HttpResponseMessage var_response = var_client.GetAsync(url).Result)
+                {
+                    using (HttpContent var_content = var_response.Content)
+                    {
+                        string result = var_content.ReadAsStringAsync().Result;
+                        var variation_price = getVariationPrice(result, sv.ItemID);
+                        sv.Price = variation_price;
+                        sv.Variation = GetVariation(result);
+                    }
+                }
+            }
+        }
+        protected static List<SupplierVariation> InitSupplierVariations(string URL, List<string> itemIDs)
         {
             var supplierVariation = new List<SupplierVariation>();
             foreach(string itemID in itemIDs)
             {
                 var variation = new SupplierVariation();
                 variation.URL = CreateVariationURL(URL, itemID);
+                variation.ItemID = itemID;
                 supplierVariation.Add(variation);
             }
             return supplierVariation;
@@ -315,13 +331,15 @@ namespace wallib
 
         /// <summary>
         /// Get the names of the variations (like 'Black', 'Brown')
+        /// Run off the main page.
+        /// Now unused since using GetVariation()
         /// </summary>
         /// <param name="html"></param>
         /// <param name="variationName"></param>
         /// <returns></returns>
-        protected static List<string> GetVariations(string html, out string variationName)
+        protected static List<string> GetVariations(string html)
         {
-            variationName = null;
+            string variationName = null;
             var variations = new List<string>();
             string optionMarker = "Choose an option";
             string variationNameMarker = "id=\"";
@@ -387,6 +405,90 @@ namespace wallib
                 dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
             }
             return variations;
+        }
+        /// <summary>
+        /// Run from selecting the variation.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
+        protected static string GetVariationNameVar_notused(string html)
+        {
+            string marker = "variant-category-container";
+            string marker2 = "label=\"";
+            string endMarker = "\"";
+
+            int pos = html.IndexOf(marker);
+            int pos2 = html.IndexOf(marker2, pos);
+            pos2 += marker2.Length;
+            int endPos = html.IndexOf(endMarker, pos2);
+            
+            string variationName = html.Substring(pos2, endPos - pos2);
+            return variationName;
+        }
+        /// <summary>
+        /// Get variation from selected variation.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
+        protected static string GetVariation(string html)
+        {
+            string marker = "Current selection is: ";
+            string endMarker = "\"";
+
+            int pos = html.IndexOf(marker);
+            pos += marker.Length;
+            int endPos = html.IndexOf(endMarker, pos);
+
+            string variation = html.Substring(pos, endPos - pos);
+            return variation;
+        }
+        protected static string GetVariationName(string html)
+        {
+            string variationName = null;
+            var variations = new List<string>();
+            string optionMarker = "Choose an option";
+            string variationNameMarker = "id=\"";
+            string markerEnd = "\"";
+
+            string sectionMarker = "<div class=\"variants__list\"";
+            string sectionEndMarker = "</label></div>";
+
+            try
+            {
+                // cut the section that has the radio group of variations
+                int sectionPos = html.IndexOf(sectionMarker);
+                if (sectionPos > -1)
+                {
+                    int sectionEndPos = html.IndexOf(sectionEndMarker, sectionPos + 1);
+                    if (sectionEndPos > -1)
+                    {
+                        string section = html.Substring(sectionPos, sectionEndPos - sectionPos);
+
+                        int optionPos = html.IndexOf(optionMarker);
+                        if (optionPos > -1)
+                        {
+                            // get the variation name such as 'Actual color'
+                            int variationNamePos = html.IndexOf(variationNameMarker, optionPos);
+                            if (variationNamePos > -1)
+                            {
+                                variationNamePos += variationNameMarker.Length;
+                                int variationNameEndPos = html.IndexOf(markerEnd, variationNamePos);
+                                if (variationNameEndPos > -1)
+                                {
+                                    variationName = html.Substring(variationNamePos, variationNameEndPos - variationNamePos);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                string header = string.Format("GetVariationName");
+                string ret = dsutil.DSUtil.ErrMsg(header, exc);
+                dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
+            }
+            return variationName;
         }
         protected static bool IsFreightShipping(string html)
         {
@@ -805,6 +907,24 @@ namespace wallib
             endPricePos = html.IndexOf("\"", pricePos + priceMarker.Length);
             offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
             return offerPrice;
+        }
+        public static decimal? getVariationPrice(string html, string itemId)
+        {
+            string priceMarker = "\"itemId\":\"" + itemId + "\",\"price\":";
+            int endPricePos = 0;
+            string offerPrice = null;
+
+            int pricePos = html.IndexOf(priceMarker);
+            endPricePos = html.IndexOf(",", pricePos + priceMarker.Length);
+            offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
+
+            decimal price;
+            bool r = decimal.TryParse(offerPrice, out price);
+            if (r)
+            {
+                return price;
+            }
+            else return null;
         }
 
         public static decimal reprice(decimal price, double px_mult)
