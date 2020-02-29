@@ -73,13 +73,15 @@ namespace wallib
                         }
                         item.SourceID = 1;
                         item.ItemURL = URL;
+                        images = GetImages(html, imgLimit);
                         item.IsVariation = IsVariation(html);
                         if (item.IsVariation.Value)
                         {
                             item.VariationName = GetVariationName(html);
                             item.usItemId = Collect_usItemId(URL, html);
                             item.SupplierVariation = InitSupplierVariations(URL, item.usItemId);
-                            FetchAndFillVariations(item.SupplierVariation);
+                            item.VariationPicURL = GetVariationImages(html, item.SupplierVariation.Count);
+                            FetchAndFillVariations(item.SupplierVariation, item.VariationPicURL);
                         }
                         item.IsFreightShipping = IsFreightShipping(html);
                         item.UPC = GetUPC(html);
@@ -98,17 +100,6 @@ namespace wallib
                         }
                         itemNo = parseItemNo(html);
                         item.ItemID = itemNo;
-
-                        images = GetImages(html, imgLimit);
-
-                        if (item.IsVariation ?? false)
-                        {
-                            item.VariationPicURL = GetVariationImages(html);
-                            /*
-                            GetModelNumbers(html);
-                            GetBaseURL(html);
-                            */
-                        }
 
                         if (images != null)
                         {
@@ -160,8 +151,14 @@ namespace wallib
             }
             return item;
         }
-        protected static void FetchAndFillVariations(List<SupplierVariation> supplierVariation)
+        protected static void FetchAndFillVariations(List<SupplierVariation> supplierVariation, List<string> pics)
         {
+            int x = supplierVariation.Count;
+            int y = pics.Count;
+            int variationPicCount = y / (x + 1);
+            //int variationPicCount = z / x;
+            int offset = 0;
+
             foreach (var sv in supplierVariation)
             {
                 string url = sv.URL;
@@ -174,9 +171,21 @@ namespace wallib
                         var variation_price = getVariationPrice(result, sv.ItemID);
                         sv.Price = variation_price;
                         sv.Variation = GetVariation(result);
+                        sv.Images = BuildVarPicList(pics, offset, variationPicCount);
+                        offset += variationPicCount;
+                        //GetVariationImages(result);
                     }
                 }
             }
+        }
+        protected static List<string> BuildVarPicList(List<string> varPics, int offset, int groupNum)
+        {
+            var varPicList = new List<string>();
+            for(int i = offset; i< (offset + groupNum); i++)
+            {
+                varPicList.Add(varPics[i]);
+            }
+            return varPicList;
         }
         protected static List<SupplierVariation> InitSupplierVariations(string URL, List<string> itemIDs)
         {
@@ -648,12 +657,48 @@ namespace wallib
             return images;
         }
 
+        protected static List<string> GetVariationImages(string html, int numVariations)
+        {
+            var images = new List<string>();
+            string endMarker = "Brand Link";
+            string startMarker = "AVAILABLE";
+
+            int endMarkerPos = html.IndexOf(endMarker);
+            if (endMarkerPos > -1)
+            {
+                int startMarkerPos = html.LastIndexOf(startMarker, endMarkerPos);
+                if (startMarkerPos > -1)
+                {
+                    int pos = 0;
+                    int startPos = startMarkerPos;
+                    do
+                    {
+                        pos = html.IndexOf("https://i5.walmartimages.com/asr/", startPos);
+                        if (pos > -1)
+                        {
+                            int endPos = html.IndexOf(",", pos);
+                            if (endPos > -1)
+                            {
+                                string imgName = html.Substring(pos, (endPos - pos - 1)).Replace("\"", string.Empty).Replace("}", string.Empty).Replace("]", string.Empty);
+                                images.Add(imgName);
+                                startPos = endPos + 1;
+                            }
+                        }
+                    } while (pos > -1);
+                }
+            }
+            for (int i = 0; i < numVariations; i++) {
+                images.RemoveAt(0);
+            }
+            return images;
+        }
+
         /// It looks like this method still holds true for variations
         /// To get the individual variation images such backwards from startMarker for \"swatch\":
         /// After the actual image URL, you'll see a phrase like \"images\":0
         /// When you get to '0' that's the first image.
 
-        protected static List<string> GetVariationImages(string html)
+        protected static List<string> GetVariationImages_notused(string html)
         {
             var images = new List<string>();
             string endMarker = "Brand Link";
@@ -685,6 +730,7 @@ namespace wallib
             }
             return images;
         }
+
         /// <summary>
         /// Variations have model numbers and then you can construct it's URL.
         /// Note that you have to use GetBaseURL() to get the landing page URL and thus model number.
