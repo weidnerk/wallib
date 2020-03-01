@@ -1353,7 +1353,48 @@ namespace wallib
                     item.CanList = "VERO branded";
                 }
             }
+            bool isComputerCamera = IsCameraComputer(item.Description);
+            if (isComputerCamera)
+            {
+                item.CanList = "item is computer/camera";
+            }
         }
 
+        /// <summary>
+        /// Walmart only offers 14 day returns on computer and cameras, however this does not apply to printers.
+        /// We would prefer to start by searching title but presently don't have title so try description.
+        /// </summary>
+        /// <param name="description"></param>
+        /// <returns></returns>
+        protected static bool IsCameraComputer(string description)
+        {
+            bool ret = false;
+            string computerMarker = "computer";
+            string computerMarker2 = "laptop";
+            string cameraMarker = "camera";
+
+            int pos = description.ToUpper().IndexOf(computerMarker.ToUpper());
+            if (pos == -1)
+            {
+                pos = description.ToUpper().IndexOf(computerMarker2.ToUpper());
+                if (pos == -1)
+                {
+                    pos = description.ToUpper().IndexOf(cameraMarker.ToUpper());
+                    if (pos > -1)
+                    {
+                        ret = true;
+                    }
+                }
+                else
+                {
+                    ret = true;
+                }
+            }
+            else
+            {
+                ret = true;
+            }
+            return ret;
+        }
     }
 }
