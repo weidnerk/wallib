@@ -1356,7 +1356,7 @@ namespace wallib
             bool isComputerCamera = IsCameraComputer(item.Description);
             if (isComputerCamera)
             {
-                item.CanList = "item is computer/camera";
+                item.CanList = "walmart item is computer/camera";
             }
         }
 
