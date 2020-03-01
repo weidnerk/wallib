@@ -1310,5 +1310,33 @@ namespace wallib
             var proposePrice = breakeven * (1m + ((decimal)pctProfit * 0.01m));
             return new PriceProfit { BreakEven = breakeven, ProposePrice = proposePrice };
         }
+        /// <summary>
+        /// Server side supplier item validation - is this where function belongs?  Yes, bcs supplier like walmart has different return policy for computers, cameras.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="allowedDeliveryDays"></param>
+        public static void CanList(SupplierItem item, int allowedDeliveryDays)
+        {
+            if (item.Arrives.HasValue)
+            {
+                int days = dsutil.DSUtil.GetBusinessDays(DateTime.Now, item.Arrives.Value);
+                if (days > allowedDeliveryDays)
+                {
+                    item.CanList = "slow shipping and handling";
+                }
+            }
+            if (item.IsFreightShipping.HasValue)
+            {
+                if(item.IsFreightShipping.Value)
+                {
+                    item.CanList = "has freight shipping";
+                }
+            }
+            if (item.OutOfStock)
+            {
+                item.CanList = "out of stock";
+            }
+        }
+
     }
 }
