@@ -48,6 +48,9 @@ namespace wallib
         /// <returns>WalItem object, null if could not fetch item</returns>
         public static async Task<SupplierItem> GetDetail(string URL, int imgLimit)
         {
+            // freight delivery
+            // URL = "https://www.walmart.com//ip/Carolina-Chair-Table-Tavern-Pub-Bar-Table-44-Espresso/869432422";
+
             dsmodels.DataModelsDB db = new dsmodels.DataModelsDB();
             var item = new SupplierItem();
             string itemNo = null;
@@ -501,7 +504,7 @@ namespace wallib
         }
         protected static bool IsFreightShipping(string html)
         {
-            const string marker = "freight delivery";
+            const string marker = "freight delivery</span>";
             int pos = html.IndexOf(marker);
             if (pos == -1)
             {
@@ -1335,6 +1338,13 @@ namespace wallib
             if (item.OutOfStock)
             {
                 item.CanList = "out of stock";
+            }
+            if (item.SoldAndShippedBySupplier.HasValue)
+            {
+                if (!item.SoldAndShippedBySupplier.Value)
+                {
+                    item.CanList = "not fulfilled by supplier";
+                }
             }
         }
 
