@@ -1346,6 +1346,13 @@ namespace wallib
                     item.CanList = "not fulfilled by supplier";
                 }
             }
+            if (item.IsVERO.HasValue)
+            {
+                if (item.IsVERO.Value)
+                {
+                    item.CanList = "VERO branded";
+                }
+            }
         }
 
     }
