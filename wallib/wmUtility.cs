@@ -1247,13 +1247,12 @@ namespace wallib
         {
             // Remove product disclaimer
             string marker = @"<div class=""product-description-disclaimer""";
-            string endMarker = @"See our disclaimer </span></span></button></span></div></div>";
+            string endMarker = "<div class=\"about-desc\"";
 
             int pos = descr.IndexOf(marker);
             int endPos = descr.IndexOf(endMarker, pos + marker.Length);
             if (endPos > -1)
             {
-                endPos += endMarker.Length;
                 string toRemove = descr.Substring(pos, endPos - pos);
                 string output = descr.Replace(toRemove, "");
                 return output;
