@@ -98,7 +98,8 @@ namespace wallib
                         item.Description = GetDescr(html);
                         if (!string.IsNullOrEmpty(item.Description))
                         {
-                            item.Description = ModifyDescr(item.Description);
+                            item.Description = RemoveDisclaimer(item.Description);
+                            
                         }
                         else
                         {
@@ -1243,7 +1244,7 @@ namespace wallib
         /// </summary>
         /// <param name="descr"></param>
         /// <returns></returns>
-        public static string ModifyDescr(string descr)
+        public static string RemoveDisclaimer(string descr)
         {
             // Remove product disclaimer
             string marker = @"<div class=""product-description-disclaimer""";
@@ -1370,6 +1371,16 @@ namespace wallib
             if (isComputerCamera)
             {
                 item.CanList = "walmart item is computer/camera";
+            }
+            bool hasOddQuestionMark = dsutil.DSUtil.ContainsQuestionMark(item.Description);
+            if (hasOddQuestionMark)
+            {
+                item.Warning = "description has odd place question mark";
+            }
+            bool hasKeyWords = dsutil.DSUtil.ContationsKeyWords(item.Description);
+            if (hasKeyWords)
+            {
+                item.Warning = "description contains 'QUESTIONS' or 'COMMENTS'";
             }
         }
 
