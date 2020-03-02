@@ -68,6 +68,10 @@ namespace wallib
                     string html = await content.ReadAsStringAsync();
                     if (response.IsSuccessStatusCode)
                     {
+                        //if (URL == "https://www.walmart.com//ip/Mainstays-8-x-10-Black-Linear-Frame-Set-of-6/42338175")
+                        //{
+                        //    int stop = 99;
+                        //}
                         var f = GetArrivesBy(html);
                         if (f != null)
                         {
@@ -83,7 +87,7 @@ namespace wallib
                             item.VariationName = GetVariationName(html);
                             item.usItemId = Collect_usItemId(URL, html);
                             item.SupplierVariation = InitSupplierVariations(URL, item.usItemId);
-                            item.VariationPicURL = GetVariationImages(html, item.SupplierVariation.Count);
+                            item.VariationPicURL = GetVariationImages(html, item.SupplierVariation.Count, URL);
                             FetchAndFillVariations(item.SupplierVariation, item.VariationPicURL);
                         }
                         item.IsFreightShipping = IsFreightShipping(html);
@@ -660,38 +664,48 @@ namespace wallib
             return images;
         }
 
-        protected static List<string> GetVariationImages(string html, int numVariations)
+        protected static List<string> GetVariationImages(string html, int numVariations, string URL)
         {
             var images = new List<string>();
             string endMarker = "Brand Link";
             string startMarker = "AVAILABLE";
 
-            int endMarkerPos = html.IndexOf(endMarker);
-            if (endMarkerPos > -1)
+            try
             {
-                int startMarkerPos = html.LastIndexOf(startMarker, endMarkerPos);
-                if (startMarkerPos > -1)
+                int endMarkerPos = html.IndexOf(endMarker);
+                if (endMarkerPos > -1)
                 {
-                    int pos = 0;
-                    int startPos = startMarkerPos;
-                    do
+                    int startMarkerPos = html.LastIndexOf(startMarker, endMarkerPos);
+                    if (startMarkerPos > -1)
                     {
-                        pos = html.IndexOf("https://i5.walmartimages.com/asr/", startPos);
-                        if (pos > -1)
+                        int pos = 0;
+                        int startPos = startMarkerPos;
+                        do
                         {
-                            int endPos = html.IndexOf(",", pos);
-                            if (endPos > -1)
+                            pos = html.IndexOf("https://i5.walmartimages.com/asr/", startPos);
+                            if (pos > -1)
                             {
-                                string imgName = html.Substring(pos, (endPos - pos - 1)).Replace("\"", string.Empty).Replace("}", string.Empty).Replace("]", string.Empty);
-                                images.Add(imgName);
-                                startPos = endPos + 1;
+                                int endPos = html.IndexOf(",", pos);
+                                if (endPos > -1)
+                                {
+                                    string imgName = html.Substring(pos, (endPos - pos - 1)).Replace("\"", string.Empty).Replace("}", string.Empty).Replace("]", string.Empty);
+                                    images.Add(imgName);
+                                    startPos = endPos + 1;
+                                }
                             }
-                        }
-                    } while (pos > -1);
+                        } while (pos > -1);
+                    }
+                }
+                for (int i = 0; i < numVariations; i++)
+                {
+                    images.RemoveAt(0);
                 }
             }
-            for (int i = 0; i < numVariations; i++) {
-                images.RemoveAt(0);
+            catch (Exception exc)
+            {
+                string header = string.Format("GetVariationImages: " + URL);
+                string ret = dsutil.DSUtil.ErrMsg(header, exc);
+                dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
             }
             return images;
         }
