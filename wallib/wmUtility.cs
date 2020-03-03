@@ -1372,10 +1372,11 @@ namespace wallib
             {
                 item.CanList = "walmart item is computer/camera";
             }
-            bool hasOddQuestionMark = dsutil.DSUtil.ContainsQuestionMark(item.Description);
+            string segment;
+            bool hasOddQuestionMark = dsutil.DSUtil.ContainsQuestionMark(item.Description, out segment);
             if (hasOddQuestionMark)
             {
-                item.Warning = "description has odd place question mark";
+                item.Warning = "description has odd place question mark -> " + segment;
             }
             bool hasKeyWords = dsutil.DSUtil.ContationsKeyWords(item.Description);
             if (hasKeyWords)
