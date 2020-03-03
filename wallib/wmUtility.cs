@@ -917,9 +917,22 @@ namespace wallib
 
         protected static bool ParseShippingNotAvailable(string html)
         {
+            bool ret = false;
             const string marker = "Shipping not available";
+            const string marker2 = "Delivery not available";
             int pos = html.IndexOf(marker);
-            return (pos > -1) ? true : false;
+            if (pos > -1) {
+                ret = true;
+            }
+            else
+            {
+                pos = html.IndexOf(marker2);
+                if (pos > -1)
+                {
+                    ret = true;
+                }
+            }
+            return ret;
         }
 
         public static string getOfferPrice(string html, int startSearching, string title)
@@ -1366,6 +1379,14 @@ namespace wallib
                 {
                     item.CanList = "VERO branded";
                 }
+            }
+            if (!item.Arrives.HasValue)
+            {
+                item.CanList = "could not calculate arrival date";
+            }
+            if (item.ShippingNotAvailable)
+            {
+                item.CanList = "shipping not available";
             }
             bool isComputerCamera = IsCameraComputer(item.Description);
             if (isComputerCamera)
