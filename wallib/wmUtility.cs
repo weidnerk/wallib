@@ -1395,6 +1395,13 @@ namespace wallib
             {
                 canList.Add("Walmart item is computer/camera");
             }
+            if  (item.IsVariation.HasValue)
+            {
+                if (item.IsVariation.Value)
+                {
+                    canList.Add("Item is a variation");
+                }
+            }
             item.CanList = canList;
 
             var warning = new List<string>();
@@ -1447,6 +1454,20 @@ namespace wallib
                 ret = true;
             }
             return ret;
+        }
+
+        protected static string RemoveCAFoodWarning(string descr)
+        {
+            /*
+             * copy html from ds-109 descr into w3schools
+             * clip offending html into notepad
+             * replace " with \"
+             * create string variable, marker, as you see below
+             * copy string from notepad into variable value
+             */
+            const string marker = "<section class=\"AboutProduct AboutHealth Warnings\"><h3 class=\"font-bold moduleHeading\"><span class=\"warning-icon\" style=\"background-image:url(//i5.walmartimages.com/dfw/63fd9f59-7325/957d99cd-f0f6-483c-b16f-376cd3b1aa10/v1/warning-icon-18.svg)\"></span>Warning:</h3><p class=\"Warnings\"><span class=\"aboutModuleText\"><span>*WARNING FOR CALIFORNIA RESIDENTS: Consuming any of our foods or dietary supplements can expose you to chemicals including lead, which is known to the State of California to cause cancer and birth defects or other reproductive harm. For more information, go to/food <a target=\"_blank\" href=\"//www.p65warnings.ca.gov\">www.p65warnings.ca.gov</a></span></span></p></section>";
+            var newDescr = descr.Replace(marker, string.Empty);
+            return newDescr;
         }
     }
 }
