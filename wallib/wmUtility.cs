@@ -1347,63 +1347,69 @@ namespace wallib
         /// <param name="allowedDeliveryDays"></param>
         public static void CanList(SupplierItem item, int allowedDeliveryDays)
         {
+            var canList = new List<string>();
             if (item.Arrives.HasValue)
             {
                 int days = dsutil.DSUtil.GetBusinessDays(DateTime.Now, item.Arrives.Value);
                 if (days > allowedDeliveryDays)
                 {
-                    item.CanList = "slow shipping and handling";
+                    canList.Add("Slow shipping and handling");
                 }
             }
             if (item.IsFreightShipping.HasValue)
             {
                 if(item.IsFreightShipping.Value)
                 {
-                    item.CanList = "has freight shipping";
+                    canList.Add("Has freight shipping");
                 }
             }
             if (item.OutOfStock)
             {
-                item.CanList = "out of stock";
+                canList.Add("Out of stock");
             }
             if (item.SoldAndShippedBySupplier.HasValue)
             {
                 if (!item.SoldAndShippedBySupplier.Value)
                 {
-                    item.CanList = "not fulfilled by supplier";
+                    canList.Add("Not fulfilled by supplier");
                 }
             }
             if (item.IsVERO.HasValue)
             {
                 if (item.IsVERO.Value)
                 {
-                    item.CanList = "VERO branded";
+                    canList.Add("VERO branded");
                 }
             }
             if (!item.Arrives.HasValue)
             {
-                item.CanList = "could not calculate arrival date";
+                canList.Add("Could not calculate arrival date");
             }
             if (item.ShippingNotAvailable)
             {
-                item.CanList = "shipping not available";
+                canList.Add("Shipping not available");
             }
+            
             bool isComputerCamera = IsCameraComputer(item.Description);
             if (isComputerCamera)
             {
-                item.CanList = "walmart item is computer/camera";
+                canList.Add("Walmart item is computer/camera");
             }
+            item.CanList = canList;
+
+            var warning = new List<string>();
             string segment;
             bool hasOddQuestionMark = dsutil.DSUtil.ContainsQuestionMark(item.Description, out segment);
             if (hasOddQuestionMark)
             {
-                item.Warning = "description has odd place question mark -> " + segment;
+                warning.Add("Description has odd place question mark -> " + segment);
             }
             bool hasKeyWords = dsutil.DSUtil.ContationsKeyWords(item.Description);
             if (hasKeyWords)
             {
-                item.Warning = "description contains 'QUESTIONS' or 'COMMENTS'";
+                warning.Add("Description contains 'QUESTIONS' or 'COMMENTS' or 'WALMART' or 'WARRANTY'");
             }
+            item.Warning = warning;
         }
 
         /// <summary>
