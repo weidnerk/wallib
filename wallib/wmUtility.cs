@@ -1309,7 +1309,7 @@ namespace wallib
                         {
                             searchResponse.Count = (byte)nodes.Count;
                             var h = nodes[0].GetAttributeValue("href", "");
-                            string detailUrl = "https://www.walmart.com/" + h;
+                            string detailUrl = "https://www.walmart.com" + h;
                             searchResponse.URL = detailUrl;
                         }
                     }
