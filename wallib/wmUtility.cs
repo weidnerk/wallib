@@ -1404,21 +1404,31 @@ namespace wallib
             }
             item.CanList = canList;
 
+           
+            item.Warning = GetWarnings(item.Description);
+        }
+        public static List<string> GetWarnings(string strCheck)
+        {
+            
             var warning = new List<string>();
             string segment;
-            bool hasOddQuestionMark = dsutil.DSUtil.ContainsQuestionMark(item.Description, out segment);
+            bool hasOddQuestionMark = dsutil.DSUtil.ContainsQuestionMark(strCheck, out segment);
             if (hasOddQuestionMark)
             {
                 warning.Add("Description has odd place question mark -> " + segment);
             }
-            bool hasKeyWords = dsutil.DSUtil.ContationsKeyWords(item.Description);
+            bool hasKeyWords = dsutil.DSUtil.ContationsKeyWords(strCheck, out string help);
             if (hasKeyWords)
             {
-                warning.Add("Description contains 'QUESTIONS' or 'COMMENTS' or 'WALMART' or 'WARRANTY'");
+                warning.Add("Description " + help);
             }
-            item.Warning = warning;
+            bool hasDisclaimer = dsutil.DSUtil.ContationsDisclaimer(strCheck);
+            if (hasDisclaimer)
+            {
+                warning.Add("Description contains Disclaimer");
+            }
+            return warning;
         }
-
         /// <summary>
         /// Walmart only offers 14 day returns on computer and cameras, however this does not apply to printers.
         /// We would prefer to start by searching title but presently don't have title so try description.
