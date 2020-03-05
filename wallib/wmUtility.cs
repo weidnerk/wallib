@@ -51,6 +51,10 @@ namespace wallib
             // freight delivery
             // URL = "https://www.walmart.com//ip/Carolina-Chair-Table-Tavern-Pub-Bar-Table-44-Espresso/869432422";
 
+            // GetVariationImages
+            // Index was out of range. Must be non-negative and less than the size of the collection.
+            //URL = "https://www.walmart.com/ip/Flower-Exposition-100-Hypoallergenic-cotton-Patchwork-2-piece-Quilt-Set-Bedroom-Quilt-Bedding-Twin-size-Coral/887587945";
+
             dsmodels.DataModelsDB db = new dsmodels.DataModelsDB();
             var item = new SupplierItem();
             string itemNo = null;
@@ -697,10 +701,14 @@ namespace wallib
                         } while (pos > -1);
                     }
                 }
+
+                /*
+                 * 03.05.2020 don't remember why removing first image
                 for (int i = 0; i < numVariations; i++)
                 {
                     images.RemoveAt(0);
                 }
+                */
             }
             catch (Exception exc)
             {
