@@ -1425,10 +1425,13 @@ namespace wallib
             {
                 warning.Add("Description has odd place question mark -> " + segment);
             }
-            bool hasKeyWords = dsutil.DSUtil.ContationsKeyWords(strCheck, out string help);
+            bool hasKeyWords = dsutil.DSUtil.ContationsKeyWords(strCheck, out List<string> help);
             if (hasKeyWords)
             {
-                warning.Add("Description " + help);
+                foreach (var h in help)
+                {
+                    warning.Add("Description " + h);
+                }
             }
             bool hasDisclaimer = dsutil.DSUtil.ContationsDisclaimer(strCheck);
             if (hasDisclaimer)
