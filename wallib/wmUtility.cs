@@ -2,8 +2,10 @@
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -276,10 +278,10 @@ namespace wallib
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        protected static string CleanURL(string url)
+        public static string CleanURL(string url)
         {
             string newURL = url;
-            string marker = "?selected=true";
+            string marker = "?";
             int pos = url.IndexOf(marker);
             if (pos > -1)
             {
@@ -1293,10 +1295,12 @@ namespace wallib
             return false;
         }
 
+
         /// <summary>
         /// Give a search term like a UPC or MPN, search walmart
         /// </summary>
         /// <param name="search"></param>
+        /// <returns>custom response of </returns>
         public static WalmartSearchProdIDResponse SearchProdID(string search)
         {
             var searchResponse = new WalmartSearchProdIDResponse();
@@ -1315,6 +1319,7 @@ namespace wallib
                         var nodes = doc.DocumentNode.SelectNodes("//a[@class='product-title-link line-clamp line-clamp-2']");
                         if (nodes != null)
                         {
+                            // get url of first match
                             searchResponse.Count = (byte)nodes.Count;
                             var h = nodes[0].GetAttributeValue("href", "");
                             string detailUrl = "https://www.walmart.com" + h;
@@ -1325,7 +1330,6 @@ namespace wallib
             }
             return searchResponse;
         }
-
         protected static decimal wmBreakEvenPrice(decimal supplierPrice, decimal minFreeShipping, decimal shipping, double eBayPct)
         {
             if (supplierPrice < minFreeShipping)
@@ -1489,6 +1493,38 @@ namespace wallib
             const string marker = "<section class=\"AboutProduct AboutHealth Warnings\"><h3 class=\"font-bold moduleHeading\"><span class=\"warning-icon\" style=\"background-image:url(//i5.walmartimages.com/dfw/63fd9f59-7325/957d99cd-f0f6-483c-b16f-376cd3b1aa10/v1/warning-icon-18.svg)\"></span>Warning:</h3><p class=\"Warnings\"><span class=\"aboutModuleText\"><span>*WARNING FOR CALIFORNIA RESIDENTS: Consuming any of our foods or dietary supplements can expose you to chemicals including lead, which is known to the State of California to cause cancer and birth defects or other reproductive harm. For more information, go to/food <a target=\"_blank\" href=\"//www.p65warnings.ca.gov\">www.p65warnings.ca.gov</a></span></span></p></section>";
             var newDescr = descr.Replace(marker, string.Empty);
             return newDescr;
+        }
+        public static bool isValidProductURL(string url)
+        {
+            bool ret = false;
+            const string mustStartWith = "https://www.walmart.com/ip/";
+            bool startsWith = url.StartsWith(mustStartWith);
+
+            if (startsWith)
+            {
+                int pos = url.LastIndexOf("/");
+                if (url.Length > pos)
+                {
+                    string itemID = url.Substring(pos + 1, url.Length - (pos + 1));
+                    if (dsutil.DSUtil.IsDigitsOnly(itemID))
+                    {
+                        ret = true;
+                    }
+                }
+            }
+            return ret;
+        }
+        public static string FirstMatchURL(List<string> links)
+        {
+            string ret = null;
+            foreach(string link in links)
+            {
+                if (isValidProductURL(link)) {
+                    ret = link;
+                    break;
+                }
+            }
+            return ret;
         }
     }
 }
