@@ -1402,11 +1402,6 @@ namespace wallib
                 canList.Add("Shipping not available");
             }
             
-            bool isComputerCamera = IsCameraComputer(item.Description);
-            if (isComputerCamera)
-            {
-                canList.Add("Walmart item is computer/camera");
-            }
             if  (item.IsVariation.HasValue)
             {
                 if (item.IsVariation.Value)
@@ -1441,6 +1436,11 @@ namespace wallib
             if (hasDisclaimer)
             {
                 warning.Add("Description contains Disclaimer");
+            }
+            bool isComputerCamera = IsCameraComputer(strCheck);
+            if (isComputerCamera)
+            {
+                warning.Add("Description computer/camera");
             }
             return warning;
         }
