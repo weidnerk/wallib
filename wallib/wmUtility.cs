@@ -1526,5 +1526,18 @@ namespace wallib
             }
             return ret;
         }
+        public static List<string> ValidURLs(List<string> links)
+        {
+            var target = new List<string>();
+            
+            foreach(var l in links)
+            {
+                if (isValidProductURL(l))
+                {
+                    target.Add(l);
+                }
+            }
+            return target;
+        }
     }
 }
