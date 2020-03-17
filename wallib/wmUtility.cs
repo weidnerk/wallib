@@ -868,15 +868,11 @@ namespace wallib
         protected static bool FulfilledByWalmart(string html)
         {
             string str = dsutil.DSUtil.HTMLToString(html);
-            const string marker = "\"sold_by\":{\"values\":[\"Walmart\"]";
-            int pos = html.IndexOf(marker);
+            const string shippedMarker = "Sold &amp; shipped by</span></span><a class=\"seller-name\" href=\"https://help.walmart.com/\" data-tl-id=\"ProductSellerInfo-SellerName\" tabindex=\"0\">Walmart</a>";
+            int pos = html.IndexOf(shippedMarker);
             if (pos > -1)
             {
                 return true;
-                // 10.22.2019 not sure this relevent anymore
-                const string shippedMarker = "shipped by</span></span><a class=\"seller-name\" href=\"https://help.walmart.com/\"";
-                pos = html.IndexOf(shippedMarker);
-                return (pos > -1) ? true : false;
             }
             return false;
         }
