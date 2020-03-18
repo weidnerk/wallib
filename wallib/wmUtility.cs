@@ -165,6 +165,12 @@ namespace wallib
             }
             return item;
         }
+
+        /// <summary>
+        /// BETA - if item is variation, fill variation properties.
+        /// </summary>
+        /// <param name="supplierVariation"></param>
+        /// <param name="pics"></param>
         protected static void FetchAndFillVariations(List<SupplierVariation> supplierVariation, List<string> pics)
         {
             int x = supplierVariation.Count;
@@ -192,6 +198,13 @@ namespace wallib
                 }
             }
         }
+        /// <summary>
+        /// Attempt to collect variation's images.
+        /// </summary>
+        /// <param name="varPics"></param>
+        /// <param name="offset"></param>
+        /// <param name="groupNum"></param>
+        /// <returns></returns>
         protected static List<string> BuildVarPicList(List<string> varPics, int offset, int groupNum)
         {
             var varPicList = new List<string>();
@@ -201,6 +214,12 @@ namespace wallib
             }
             return varPicList;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="URL"></param>
+        /// <param name="itemIDs"></param>
+        /// <returns></returns>
         protected static List<SupplierVariation> InitSupplierVariations(string URL, List<string> itemIDs)
         {
             var supplierVariation = new List<SupplierVariation>();
@@ -214,6 +233,11 @@ namespace wallib
             return supplierVariation;
             
         }
+        /// <summary>
+        /// Parse item's price (main).
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         protected static decimal? GetPrice(string html)
         {
             string offerPrice = wallib.wmUtility.getOfferPriceDetail(html, 0);
@@ -322,6 +346,12 @@ namespace wallib
             }
             return itemID;
         }
+
+        /// <summary>
+        /// Is the item a variation?
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         protected static bool IsVariation(string html)
         {
             int pos = html.IndexOf("Choose an option");
@@ -465,6 +495,12 @@ namespace wallib
             string variation = html.Substring(pos, endPos - pos);
             return variation;
         }
+
+        /// <summary>
+        /// A variation name is something like 'color' or 'size'
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         protected static string GetVariationName(string html)
         {
             string variationName = null;
@@ -513,6 +549,12 @@ namespace wallib
             }
             return variationName;
         }
+
+        /// <summary>
+        /// Is shipping freight?
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         protected static bool IsFreightShipping(string html)
         {
             const string marker = "freight delivery</span>";
@@ -526,6 +568,11 @@ namespace wallib
                 return true;
             }
         }
+        /// <summary>
+        /// Parse walmarts' internal item number
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         protected static string parseItemNo(string html)
         {
             const string marker = "Walmart #";
@@ -562,7 +609,11 @@ namespace wallib
 
             return itemNo;
         }
-
+        /// <summary>
+        /// Collect item images - not used.
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
         protected static List<string> GetImages_xpath(string url)
         {
             HtmlAgilityPack.HtmlWeb web = new HtmlWeb();
@@ -670,7 +721,13 @@ namespace wallib
             }
             return images;
         }
-
+        /// <summary>
+        /// Get variation images.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <param name="numVariations"></param>
+        /// <param name="URL"></param>
+        /// <returns></returns>
         protected static List<string> GetVariationImages(string html, int numVariations, string URL)
         {
             var images = new List<string>();
@@ -801,10 +858,14 @@ namespace wallib
             string baseURL = html.Substring(pos + marker.Length, endPos - (pos + marker.Length + 1));
             return baseURL;
         }
+        /// <summary>
+        /// Get list of item images from page html.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         protected static List<string> ParseImages(string html)
         {
             const string marker = "assetSizeUrls\":{\"thumb\":\"";
-            //const string endMarker = ".jpeg";
             const string endMarker = "odnHeight";
             int endPos;
             var images = new List<string>();
@@ -829,6 +890,13 @@ namespace wallib
             return images;
         }
 
+        /// <summary>
+        /// Pull item description.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <param name="marker"></param>
+        /// <param name="endMarker"></param>
+        /// <returns></returns>
         protected static string parseDescr(string html, string marker, string endMarker)
         {
             const int maxlen = 11;
@@ -865,6 +933,11 @@ namespace wallib
             return descr;
         }
 
+        /// <summary>
+        /// Is the item Sold & Shipped by walmart?
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         protected static bool FulfilledByWalmart(string html)
         {
             string str = dsutil.DSUtil.HTMLToString(html);
@@ -888,6 +961,11 @@ namespace wallib
             return false;
         }
 
+        /// <summary>
+        /// Parse if item is out of stock.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         protected static bool ParseOutOfStock(string html)
         {
             const string marker = "Get In-Stock Alert";
@@ -908,7 +986,12 @@ namespace wallib
             return cnt - 1;
 
         }
-
+        /// <summary>
+        /// Parse variation out of stock.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <param name="variationDescription"></param>
+        /// <returns></returns>
         protected static bool ParseOutOfStockVariation(string html, string variationDescription)
         {
             string marker = variationDescription + ",  is Not available";
@@ -921,6 +1004,11 @@ namespace wallib
             return (pos > -1) ? true : false;
         }
 
+        /// <summary>
+        /// Shipping may not be available on item
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         protected static bool ParseShippingNotAvailable(string html)
         {
             bool ret = false;
@@ -941,6 +1029,13 @@ namespace wallib
             return ret;
         }
 
+        /// <summary>
+        /// Attempt to get item's price.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <param name="startSearching"></param>
+        /// <param name="title"></param>
+        /// <returns></returns>
         public static string getOfferPrice(string html, int startSearching, string title)
         {
             int start = html.IndexOf(title);
@@ -958,6 +1053,12 @@ namespace wallib
             return offerPrice;
         }
 
+        /// <summary>
+        /// A technique to get item's price.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <param name="startSearching"></param>
+        /// <returns></returns>
         public static string getOfferPriceDetail(string html, int startSearching)
         {
             string priceMarker = "\"CURRENT\":{\"price\":";
@@ -969,6 +1070,12 @@ namespace wallib
             offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
             return offerPrice;
         }
+        /// <summary>
+        /// Another attempt to get item's price.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <param name="startSearching"></param>
+        /// <returns></returns>
         public static string getOfferPriceDetail_secondAttempt(string html, int startSearching)
         {
             string priceMarker = "\"currentPrice\":";
@@ -980,6 +1087,12 @@ namespace wallib
             offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
             return offerPrice;
         }
+        /// <summary>
+        /// Another attempt to get item's price.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <param name="startSearching"></param>
+        /// <returns></returns>
         public static string getOfferPriceDetail_thirdAttempt(string html, int startSearching)
         {
             string priceMarker = "itemprop=\"price\" content=\"";
@@ -991,6 +1104,12 @@ namespace wallib
             offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
             return offerPrice;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="html"></param>
+        /// <param name="itemId"></param>
+        /// <returns></returns>
         public static decimal? getVariationPrice(string html, string itemId)
         {
             string priceMarker = "\"itemId\":\"" + itemId + "\",\"price\":";
@@ -1010,6 +1129,12 @@ namespace wallib
             else return null;
         }
 
+        /// <summary>
+        /// Revisit - probably obsolete
+        /// </summary>
+        /// <param name="price"></param>
+        /// <param name="px_mult"></param>
+        /// <returns></returns>
         public static decimal reprice(decimal price, double px_mult)
         {
             //const decimal px_mult = 1.28m;
@@ -1020,6 +1145,11 @@ namespace wallib
             decimal newprice = price * (decimal)px_mult;
             return newprice;
         }
+        /// <summary>
+        /// Parse UPC code from page html.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         public static string GetUPC(string html)
         {
             string UPC = null;
@@ -1040,6 +1170,11 @@ namespace wallib
             }
             return UPC;
         }
+        /// <summary>
+        /// Validate string parsed as UPC
+        /// </summary>
+        /// <param name="UPC"></param>
+        /// <returns></returns>
         public static bool IsValidUPC(string UPC)
         {
             if (UPC.Length != 12)
@@ -1055,6 +1190,11 @@ namespace wallib
             }
             return true;
         }
+        /// <summary>
+        /// Grab Manufacturer Product Number
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         public static string GetMPN(string html)
         {
             /*
@@ -1136,6 +1276,11 @@ namespace wallib
             }
             return brand;
         }
+        /// <summary>
+        /// Get arrives by date - is this dependent on location (zip) of browser?
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         public static string GetArrivesBy(string html)
         {
             string result = null;
@@ -1243,6 +1388,12 @@ namespace wallib
 
             return 0;
         }
+
+        /// <summary>
+        /// Get description of item.
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         public static string GetDescr(string html)
         {
             string marker = @"<div id=""product-about""";
@@ -1326,6 +1477,14 @@ namespace wallib
             }
             return searchResponse;
         }
+        /// <summary>
+        /// Calculate our break even price on an item.
+        /// </summary>
+        /// <param name="supplierPrice"></param>
+        /// <param name="minFreeShipping"></param>
+        /// <param name="shipping"></param>
+        /// <param name="eBayPct"></param>
+        /// <returns></returns>
         protected static decimal wmBreakEvenPrice(decimal supplierPrice, decimal minFreeShipping, decimal shipping, double eBayPct)
         {
             if (supplierPrice < minFreeShipping)
@@ -1410,6 +1569,12 @@ namespace wallib
            
             item.Warning = GetWarnings(item.Description);
         }
+
+        /// <summary>
+        /// Look for items most likely want to remove from item description.
+        /// </summary>
+        /// <param name="strCheck"></param>
+        /// <returns></returns>
         public static List<string> GetWarnings(string strCheck)
         {
             
@@ -1490,6 +1655,12 @@ namespace wallib
             var newDescr = descr.Replace(marker, string.Empty);
             return newDescr;
         }
+
+        /// <summary>
+        /// Is the walmart URL and product URL
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
         public static bool isValidProductURL(string url)
         {
             bool ret = false;
