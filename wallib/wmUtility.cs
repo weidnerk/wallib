@@ -74,10 +74,6 @@ namespace wallib
                     string html = await content.ReadAsStringAsync();
                     if (response.IsSuccessStatusCode)
                     {
-                        //if (URL == "https://www.walmart.com//ip/Mainstays-8-x-10-Black-Linear-Frame-Set-of-6/42338175")
-                        //{
-                        //    int stop = 99;
-                        //}
                         var f = GetArrivesBy(html);
                         if (f != null)
                         {
@@ -105,7 +101,6 @@ namespace wallib
                         if (!string.IsNullOrEmpty(item.Description))
                         {
                             item.Description = RemoveDisclaimer(item.Description);
-                            
                         }
                         else
                         {
@@ -176,7 +171,6 @@ namespace wallib
             int x = supplierVariation.Count;
             int y = pics.Count;
             int variationPicCount = y / (x + 1);
-            //int variationPicCount = z / x;
             int offset = 0;
 
             foreach (var sv in supplierVariation)
@@ -760,14 +754,6 @@ namespace wallib
                         } while (pos > -1);
                     }
                 }
-
-                /*
-                 * 03.05.2020 don't remember why removing first image
-                for (int i = 0; i < numVariations; i++)
-                {
-                    images.RemoveAt(0);
-                }
-                */
             }
             catch (Exception exc)
             {
@@ -929,7 +915,6 @@ namespace wallib
                     done = true;
             }
             while (!done);
-
             return descr;
         }
 
@@ -1046,10 +1031,6 @@ namespace wallib
             int pricePos = html.IndexOf(priceMarker, start);
             endPricePos = html.IndexOf(",", pricePos + priceMarker.Length);
             offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
-            if (offerPrice == "0")
-            {
-                int x = 99;
-            }
             return offerPrice;
         }
 
@@ -1137,7 +1118,6 @@ namespace wallib
         /// <returns></returns>
         public static decimal reprice(decimal price, double px_mult)
         {
-            //const decimal px_mult = 1.28m;
             const decimal shippingCost = 6.0m;
             const decimal freeShipping = 35.0m;
 
@@ -1300,8 +1280,6 @@ namespace wallib
                 {
                     result = p.InnerText;
                 }
-
-                // result = node.InnerText;
             }
             return result;
         }
@@ -1400,7 +1378,6 @@ namespace wallib
             string result = null;
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
-            //var node = doc.DocumentNode.SelectSingleNode("//div[@class='about-desc']");
             var node = doc.DocumentNode.SelectSingleNode("//div[@id='about-product-section']");
             if (node != null)
             {
@@ -1441,7 +1418,6 @@ namespace wallib
         {
             return false;
         }
-
 
         /// <summary>
         /// Give a search term like a UPC or MPN, search walmart
@@ -1565,8 +1541,6 @@ namespace wallib
                 }
             }
             item.CanList = canList;
-
-           
             item.Warning = GetWarnings(item.Description);
         }
 
@@ -1577,7 +1551,6 @@ namespace wallib
         /// <returns></returns>
         public static List<string> GetWarnings(string strCheck)
         {
-            
             var warning = new List<string>();
             string segment;
             bool hasOddQuestionMark = dsutil.DSUtil.ContainsQuestionMark(strCheck, out segment);
