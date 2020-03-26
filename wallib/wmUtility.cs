@@ -65,7 +65,7 @@ namespace wallib
 
             try
             {
-                URL = CleanURL(URL);
+                //URL = CleanURL(URL);
                 using (HttpClient client = new HttpClient())
                 using (HttpResponseMessage response = await client.GetAsync(URL))
                 using (HttpContent content = response.Content)
@@ -74,12 +74,7 @@ namespace wallib
                     string html = await content.ReadAsStringAsync();
                     if (response.IsSuccessStatusCode)
                     {
-                        var f = GetArrivesBy(html);
-                        if (f != null)
-                        {
-                            var arriveby = ParseArrival(f);
-                            item.Arrives = arriveby;
-                        }
+                     
                         item.SourceID = 1;
                         item.ItemURL = URL;
                         images = GetImages(html, imgLimit);
@@ -91,6 +86,20 @@ namespace wallib
                             item.SupplierVariation = InitSupplierVariations(URL, item.usItemId);
                             item.VariationPicURL = GetVariationImages(html, item.SupplierVariation.Count, URL);
                             FetchAndFillVariations(item.SupplierVariation, item.VariationPicURL);
+                        }
+                        //if (item.IsVariation.Value)
+                        if (false)
+                        {
+                            string htmlVariation = GetArrivesByVariation(URL);
+                        }
+                        else 
+                        { 
+                            var f = GetArrivesBy(html);
+                            if (f != null)
+                            {
+                                var arriveby = ParseArrival(f);
+                                item.Arrives = arriveby;
+                            }
                         }
                         item.IsFreightShipping = IsFreightShipping(html);
                         item.UPC = GetUPC(html);
@@ -932,13 +941,29 @@ namespace wallib
             {
                 return true;
             }
+            else
+            {
+                bool ret = FulfilledByWalmart_method2(html);
+                return ret;
+            }
             return false;
         }
+
+        /// <summary>
+        /// does this work for variations?
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
         protected static bool FulfilledByWalmart_method2(string html)
         {
             string str = dsutil.DSUtil.HTMLToString(html);
-            const string marker = "Sold &amp; shipped byWalmart";
-            int pos = str.IndexOf(marker);
+            string str1 = dsutil.DSUtil.HTMLToString_Full(html);
+            //const string marker = @"\""displayName\"":\""Sold By\"",\""displayValue\"":\""Walmart\""";
+            string marker = @"\""displayName\""";
+            marker = "\"displayName\":\"Sold By\",\"displayValue\":\"Walmart\"";
+            int pos = html.IndexOf(marker);
+            //pos = str.IndexOf(marker);
+            //pos = str1.IndexOf(marker);
             if (pos > -1)
             {
                 return true;
@@ -1256,6 +1281,12 @@ namespace wallib
             }
             return brand;
         }
+        public static string GetArrivesByVariation(string URL)
+        {
+            //string html = dsutil.DSUtil.sc NavigateToTransHistory(URL);
+            string html = dsutil.Scrape.NavigateToTransHistory(URL);
+            return null;
+        }
         /// <summary>
         /// Get arrives by date - is this dependent on location (zip) of browser?
         /// </summary>
@@ -1263,6 +1294,9 @@ namespace wallib
         /// <returns></returns>
         public static string GetArrivesBy(string html)
         {
+            string str = dsutil.DSUtil.HTMLToString(html);
+            string str1 = dsutil.DSUtil.HTMLToString_Full(html);
+
             string result = null;
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
