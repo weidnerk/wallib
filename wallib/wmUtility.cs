@@ -51,7 +51,7 @@ namespace wallib
         /// </summary>
         /// <param name="URL"></param>
         /// <returns>WalItem object, null if could not fetch item</returns>
-        public static async Task<SupplierItem> GetDetail(string URL, int imgLimit)
+        public static async Task<SupplierItem> GetDetail(string URL, int imgLimit, bool calcArrivalDate)
         {
             // freight delivery
             // URL = "https://www.walmart.com//ip/Carolina-Chair-Table-Tavern-Pub-Bar-Table-44-Espresso/869432422";
@@ -97,18 +97,33 @@ namespace wallib
                         }
                         else 
                         {
+                            dsutil.DSUtil.WriteFile(_logfile, URL, "admin");
                             string arrivesByStr = GetArrivesBy(html);
                             if (arrivesByStr == null)
                             {
-                                var deliveryHtml = GetDeliveryOptions(URL);
-                                arrivesByStr = GetArrivesBy(deliveryHtml);
+                                // can't run this on the DASP web server
+                                if (calcArrivalDate)
+                                {
+                                    var deliveryHtml = GetDeliveryOptions(URL);
+                                    arrivesByStr = GetArrivesBy(deliveryHtml);
+                                    if (arrivesByStr != null)
+                                    {
+                                        dsutil.DSUtil.WriteFile(_logfile, "success on 2nd attempt", "admin");
+                                    }
+                                }
                             }
                             if (arrivesByStr != null)
                             {
                                 var arriveby = ParseArrival(arrivesByStr);
                                 item.Arrives = arriveby;
+                                dsutil.DSUtil.WriteFile(_logfile, arrivesByStr, "admin");
+                            }
+                            else
+                            {
+                                dsutil.DSUtil.WriteFile(_logfile, "Could not parse arrival date.", "admin");
                             }
                         }
+                        
                         item.IsFreightShipping = IsFreightShipping(html);
                         item.UPC = GetUPC(html);
                         item.MPN = GetMPN(html);
@@ -173,7 +188,7 @@ namespace wallib
                 string header = string.Format("wm GetDetail: {0}", URL);
                 string ret = dsutil.DSUtil.ErrMsg(header, exc);
                 dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
-                return null;
+                throw new Exception(ret);
             }
             return item;
         }
@@ -1302,8 +1317,8 @@ namespace wallib
         /// <returns></returns>
         public static string GetArrivesBy(string html)
         {
-            string str = dsutil.DSUtil.HTMLToString(html);
-            string str1 = dsutil.DSUtil.HTMLToString_Full(html);
+            //string str = dsutil.DSUtil.HTMLToString(html);
+            //string str1 = dsutil.DSUtil.HTMLToString_Full(html);
 
             string result = null;
             HtmlDocument doc = new HtmlDocument();
@@ -1566,10 +1581,6 @@ namespace wallib
                     canList.Add("VERO branded");
                 }
             }
-            if (!item.Arrives.HasValue)
-            {
-                canList.Add("Could not calculate arrival date");
-            }
             if (item.ShippingNotAvailable)
             {
                 canList.Add("Shipping not available");
@@ -1583,7 +1594,7 @@ namespace wallib
                 }
             }
             item.CanList = canList;
-            item.Warning = GetWarnings(item.Description);
+            item.Warning = GetWarnings(item);
         }
 
         /// <summary>
@@ -1591,16 +1602,16 @@ namespace wallib
         /// </summary>
         /// <param name="strCheck"></param>
         /// <returns></returns>
-        public static List<string> GetWarnings(string strCheck)
+        public static List<string> GetWarnings(SupplierItem item)
         {
             var warning = new List<string>();
             string segment;
-            bool hasOddQuestionMark = dsutil.DSUtil.ContainsQuestionMark(strCheck, out segment);
+            bool hasOddQuestionMark = dsutil.DSUtil.ContainsQuestionMark(item.Description, out segment);
             if (hasOddQuestionMark)
             {
                 warning.Add("Description has odd place question mark -> " + segment);
             }
-            bool hasKeyWords = dsutil.DSUtil.ContationsKeyWords(strCheck, out List<string> help);
+            bool hasKeyWords = dsutil.DSUtil.ContationsKeyWords(item.Description, out List<string> help);
             if (hasKeyWords)
             {
                 foreach (var h in help)
@@ -1608,16 +1619,20 @@ namespace wallib
                     warning.Add("Description " + h);
                 }
             }
-            bool hasDisclaimer = dsutil.DSUtil.ContationsDisclaimer(strCheck);
+            bool hasDisclaimer = dsutil.DSUtil.ContationsDisclaimer(item.Description);
             if (hasDisclaimer)
             {
                 warning.Add("Description contains Disclaimer");
             }
-            bool isComputerCamera = IsCameraComputer(strCheck);
+            bool isComputerCamera = IsCameraComputer(item.Description);
             if (isComputerCamera)
             {
                 warning.Add("Description computer/camera");
             }
+            //if (!item.Arrives.HasValue)
+            //{
+            //    warning.Add("Could not calculate arrival date");
+            //}
             return warning;
         }
         /// <summary>
