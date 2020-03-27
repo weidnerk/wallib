@@ -1,11 +1,14 @@
 ﻿using dsmodels;
 using HtmlAgilityPack;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -93,11 +96,16 @@ namespace wallib
                             string htmlVariation = GetArrivesByVariation(URL);
                         }
                         else 
-                        { 
-                            var f = GetArrivesBy(html);
-                            if (f != null)
+                        {
+                            string arrivesByStr = GetArrivesBy(html);
+                            if (arrivesByStr == null)
                             {
-                                var arriveby = ParseArrival(f);
+                                var deliveryHtml = GetDeliveryOptions(URL);
+                                arrivesByStr = GetArrivesBy(deliveryHtml);
+                            }
+                            if (arrivesByStr != null)
+                            {
+                                var arriveby = ParseArrival(arrivesByStr);
                                 item.Arrives = arriveby;
                             }
                         }
@@ -1713,5 +1721,52 @@ namespace wallib
             }
             return target;
         }
+
+        /// <summary>
+        /// Sometimes you have to click into "show delivery & pickup options" where I guess then walmart does an async call for the arrival time.
+        /// </summary>
+        /// <param name="URL"></param>
+        /// <returns></returns>
+        static string GetDeliveryOptions(string URL)
+        {
+            string html = null;
+            var chromeOptions = new ChromeOptions();
+            chromeOptions.AddArguments("headless");
+            IWebDriver driver = new ChromeDriver(chromeOptions);
+            try
+            {
+                // 03.27.2020
+                // hmmmm...without all the Thread.Sleep statements, tend not to get html source
+                // but I thought that's what ImplicitWait was for.
+                // not sure - can come back to this.
+                Thread.Sleep(2000);
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(60);
+                driver.Navigate().GoToUrl(URL);
+                Thread.Sleep(2000);
+
+                var element = driver.FindElement(By.Id("collapsed-fullfilment-abtest"));
+                if (element == null)
+                {
+                    dsutil.DSUtil.WriteFile(_logfile, "Could not navigate to purchase history: " + URL, "admin");
+                }
+                else
+                {
+                    element.Click();
+
+                    Thread.Sleep(3000);
+                    html = driver.PageSource;
+
+                }
+                driver.Quit();
+            }
+            catch (Exception exc)
+            {
+                driver.Quit();
+                string msg = dsutil.DSUtil.ErrMsg("GetDelivery", exc);
+                dsutil.DSUtil.WriteFile(_logfile, URL + ": " + msg, "");
+            }
+            return html;
+        }
+
     }
 }
