@@ -105,10 +105,21 @@ namespace wallib
                                 if (calcArrivalDate)
                                 {
                                     var deliveryHtml = GetDeliveryOptions(URL);
-                                    arrivesByStr = GetArrivesBy(deliveryHtml);
-                                    if (arrivesByStr != null)
+                                    if (!string.IsNullOrEmpty(deliveryHtml))
                                     {
-                                        dsutil.DSUtil.WriteFile(_logfile, "success on 2nd attempt", "admin");
+                                        arrivesByStr = GetArrivesBy(deliveryHtml);
+                                        if (arrivesByStr != null)
+                                        {
+                                            dsutil.DSUtil.WriteFile(_logfile, "Arrives By success on 2nd attempt", "admin");
+                                        }
+                                        else
+                                        {
+                                            dsutil.DSUtil.WriteFile(_logfile, "Arrives By failed on 2nd attempt", "admin");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        dsutil.DSUtil.WriteFile(_logfile, "Arrives By failed on 2nd attempt", "admin");
                                     }
                                 }
                             }
@@ -1590,7 +1601,7 @@ namespace wallib
             {
                 if (item.IsVariation.Value)
                 {
-                    canList.Add("Item is a variation");
+                    canList.Add("Item is a variation - can't grab correct pictures");
                 }
             }
             item.CanList = canList;
