@@ -134,7 +134,17 @@ namespace wallib
                                 dsutil.DSUtil.WriteFile(_logfile, "Could not parse arrival date.", "admin");
                             }
                         }
-                        
+                        if (!item.Arrives.HasValue)
+                        {
+                            item.OutOfStock = true;
+                            item.ShippingNotAvailable = true;
+                        }
+                        else
+                        {
+                            item.OutOfStock = ParseOutOfStock(html);
+                            item.ShippingNotAvailable = ParseShippingNotAvailable(html);
+                        }
+
                         item.IsFreightShipping = IsFreightShipping(html);
                         item.UPC = GetUPC(html);
                         item.MPN = GetMPN(html);
@@ -169,18 +179,11 @@ namespace wallib
                             string ret = "ERROR GetDetail - no images parsed for " + URL;
                             dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
                         }
-                        bool outOfStock = false;
 
-                        outOfStock = ParseOutOfStock(html);
-                        item.OutOfStock = outOfStock;
+                        
 
-                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                        // 01.09.2020
-                        // Regarding fetching price - at present seems that getOfferPriceDetail_thirdAttempt() is most accurate.
-                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                         item.SupplierPrice = GetPrice(html);
-                        bool shippingNotAvailable = ParseShippingNotAvailable(html);
-                        item.ShippingNotAvailable = shippingNotAvailable;
+                      
 
                         item.SoldAndShippedBySupplier = FulfilledByWalmart(html);
                         if (!item.SoldAndShippedBySupplier.Value)
@@ -1058,6 +1061,7 @@ namespace wallib
             bool ret = false;
             const string marker = "Shipping not available";
             const string marker2 = "Delivery not available";
+            const string marker3 = "Price for in-store purchase only";
             int pos = html.IndexOf(marker);
             if (pos > -1) {
                 ret = true;
@@ -1068,6 +1072,14 @@ namespace wallib
                 if (pos > -1)
                 {
                     ret = true;
+                }
+                else
+                {
+                    pos = html.IndexOf(marker3);
+                    if (pos > -1)
+                    {
+                        ret = true;
+                    }
                 }
             }
             return ret;
@@ -1605,82 +1617,7 @@ namespace wallib
                 }
             }
             item.CanList = canList;
-            item.Warning = GetWarnings(item);
-        }
-
-        /// <summary>
-        /// Look for items most likely want to remove from item description.
-        /// </summary>
-        /// <param name="strCheck"></param>
-        /// <returns></returns>
-        public static List<string> GetWarnings(SupplierItem item)
-        {
-            var warning = new List<string>();
-            string segment;
-            bool hasOddQuestionMark = dsutil.DSUtil.ContainsQuestionMark(item.Description, out segment);
-            if (hasOddQuestionMark)
-            {
-                warning.Add("Description has odd place question mark -> " + segment);
-            }
-            bool hasKeyWords = dsutil.DSUtil.ContationsKeyWords(item.Description, out List<string> help);
-            if (hasKeyWords)
-            {
-                foreach (var h in help)
-                {
-                    warning.Add("Description " + h);
-                }
-            }
-            bool hasDisclaimer = dsutil.DSUtil.ContationsDisclaimer(item.Description);
-            if (hasDisclaimer)
-            {
-                warning.Add("Description contains Disclaimer");
-            }
-            bool isComputerCamera = IsCameraComputer(item.Description);
-            if (isComputerCamera)
-            {
-                warning.Add("Description computer/camera");
-            }
-            //if (!item.Arrives.HasValue)
-            //{
-            //    warning.Add("Could not calculate arrival date");
-            //}
-            return warning;
-        }
-        /// <summary>
-        /// Walmart only offers 14 day returns on computer and cameras, however this does not apply to printers.
-        /// We would prefer to start by searching title but presently don't have title so try description.
-        /// </summary>
-        /// <param name="description"></param>
-        /// <returns></returns>
-        protected static bool IsCameraComputer(string description)
-        {
-            bool ret = false;
-            string computerMarker = "computer";
-            string computerMarker2 = "laptop";
-            string cameraMarker = "camera";
-
-            int pos = description.ToUpper().IndexOf(computerMarker.ToUpper());
-            if (pos == -1)
-            {
-                pos = description.ToUpper().IndexOf(computerMarker2.ToUpper());
-                if (pos == -1)
-                {
-                    pos = description.ToUpper().IndexOf(cameraMarker.ToUpper());
-                    if (pos > -1)
-                    {
-                        ret = true;
-                    }
-                }
-                else
-                {
-                    ret = true;
-                }
-            }
-            else
-            {
-                ret = true;
-            }
-            return ret;
+            item.Warning = dsutil.DSUtil.GetDescrWarnings(item.Description);
         }
 
         protected static string RemoveCAFoodWarning(string descr)
@@ -1758,7 +1695,7 @@ namespace wallib
             string html = null;
             var chromeOptions = new ChromeOptions();
             chromeOptions.AddArguments("headless");
-            IWebDriver driver = new ChromeDriver(chromeOptions);
+            IWebDriver driver = new ChromeDriver();
             try
             {
                 // 03.27.2020
@@ -1766,29 +1703,53 @@ namespace wallib
                 // but I thought that's what ImplicitWait was for.
                 // not sure - can come back to this.
                 Thread.Sleep(2000);
-                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(60);
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
                 driver.Navigate().GoToUrl(URL);
                 Thread.Sleep(2000);
 
-                var element = driver.FindElement(By.Id("collapsed-fullfilment-abtest"));
+                //
+                // ....Attempt to set cookie doesn't help any....but don't need it
+                //
+                //driver.Manage().Cookies.AddCookie(new OpenQA.Selenium.Cookie("t-loc-zip", "1585447407632|33772"));
+                //OpenQA.Selenium.Cookie ck = new OpenQA.Selenium.Cookie("t-loc-zip", "1585447407632|33772", "https://www.walmart.com", "/", DateTime.Now.AddDays(1));
+                //driver.Manage().Cookies.AddCookie(ck);
+
+                bool elementFound = false;
+                IWebElement element = null;
+                try
+                {
+                    element = driver.FindElement(By.Id("collapsed-fullfilment-abtest"));
+                }
+                catch { }
                 if (element == null)
                 {
-                    dsutil.DSUtil.WriteFile(_logfile, "Could not navigate to purchase history: " + URL, "admin");
+                    element = driver.FindElement(By.CssSelector(".button.launch-modal.button--link"));
+                    if (element == null)
+                    {
+                        dsutil.DSUtil.WriteFile(_logfile, "Could not navigate to purchase history: " + URL, "admin");
+                    }
+                    else
+                    {
+                        elementFound = true;
+                    }
                 }
                 else
+                {
+                    elementFound = true;
+                }
+                if (elementFound)
                 {
                     element.Click();
 
                     Thread.Sleep(3000);
                     html = driver.PageSource;
-
                 }
                 driver.Quit();
             }
             catch (Exception exc)
             {
                 driver.Quit();
-                string msg = dsutil.DSUtil.ErrMsg("GetDelivery", exc);
+                string msg = dsutil.DSUtil.ErrMsg("GetDeliveryOptions", exc);
                 dsutil.DSUtil.WriteFile(_logfile, URL + ": " + msg, "");
             }
             return html;
