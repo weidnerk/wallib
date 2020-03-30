@@ -101,7 +101,7 @@ namespace wallib
                         else 
                         {
                             ParseArrivesBy(URL, item, html, calcArrivalDate);
-                            dsutil.DSUtil.WriteFile(_logfile, URL, "admin");
+                            //dsutil.DSUtil.WriteFile(_logfile, URL, "admin");
                         }
 
                         item.IsFreightShipping = IsFreightShipping(html);
@@ -163,19 +163,28 @@ namespace wallib
 
         protected static void ParseArrivesBy(string URL, SupplierItem item, string html, bool calcArrivalDate)
         {
-            string arrivesByStr = GetArrivesBy(html);
-            if (arrivesByStr == null)
+            try
             {
-                // can't run this on the DASP web server
-                if (calcArrivalDate)
+                string arrivesByStr = GetArrivesBy(html);
+                if (arrivesByStr == null)
                 {
-                    var deliveryHtml = GetDeliveryOptions(URL);
-                    if (!string.IsNullOrEmpty(deliveryHtml))
+                    // can't run this on the DASP web server
+                    if (calcArrivalDate)
                     {
-                        arrivesByStr = GetArrivesBy(deliveryHtml);
-                        if (arrivesByStr != null)
+                        var deliveryHtml = GetDeliveryOptions(URL);
+                        if (!string.IsNullOrEmpty(deliveryHtml))
                         {
-                            dsutil.DSUtil.WriteFile(_logfile, "Arrives By success on 2nd attempt", "admin");
+                            arrivesByStr = GetArrivesBy(deliveryHtml);
+                            if (arrivesByStr != null)
+                            {
+                                dsutil.DSUtil.WriteFile(_logfile, "Arrives By success on 2nd attempt", "admin");
+                            }
+                            else
+                            {
+                                item.OutOfStock = true;
+                                item.ShippingNotAvailable = true;
+                                dsutil.DSUtil.WriteFile(_logfile, "Arrives By failed on 2nd attempt", "admin");
+                            }
                         }
                         else
                         {
@@ -184,23 +193,22 @@ namespace wallib
                             dsutil.DSUtil.WriteFile(_logfile, "Arrives By failed on 2nd attempt", "admin");
                         }
                     }
-                    else
-                    {
-                        item.OutOfStock = true;
-                        item.ShippingNotAvailable = true;
-                        dsutil.DSUtil.WriteFile(_logfile, "Arrives By failed on 2nd attempt", "admin");
-                    }
+                }
+                if (arrivesByStr != null)
+                {
+                    var arriveby = ParseArrival(arrivesByStr);
+                    item.Arrives = arriveby;
+                    dsutil.DSUtil.WriteFile(_logfile, arrivesByStr, "admin");
+                }
+                else
+                {
+                    dsutil.DSUtil.WriteFile(_logfile, "Could not parse arrival date.", "admin");
                 }
             }
-            if (arrivesByStr != null)
+            catch(Exception exc)
             {
-                var arriveby = ParseArrival(arrivesByStr);
-                item.Arrives = arriveby;
-                dsutil.DSUtil.WriteFile(_logfile, arrivesByStr, "admin");
-            }
-            else
-            {
-                dsutil.DSUtil.WriteFile(_logfile, "Could not parse arrival date.", "admin");
+                string msg = dsutil.DSUtil.ErrMsg("ParseArrivesBy", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
             }
         }
 
