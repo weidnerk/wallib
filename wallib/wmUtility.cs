@@ -77,7 +77,6 @@ namespace wallib
                     string html = await content.ReadAsStringAsync();
                     if (response.IsSuccessStatusCode)
                     {
-                     
                         item.SourceID = 1;
                         item.ItemURL = URL;
                         images = GetImages(html, imgLimit);
@@ -101,7 +100,7 @@ namespace wallib
                         else 
                         {
                             ParseArrivesBy(URL, item, html, calcArrivalDate);
-                            //dsutil.DSUtil.WriteFile(_logfile, URL, "admin");
+                            //dsutil.DSUtil.WriteFile(_logfile, "end call to ParseArrivesBy", "admin");
                         }
 
                         item.IsFreightShipping = IsFreightShipping(html);
@@ -198,7 +197,7 @@ namespace wallib
                 {
                     var arriveby = ParseArrival(arrivesByStr);
                     item.Arrives = arriveby;
-                    dsutil.DSUtil.WriteFile(_logfile, arrivesByStr, "admin");
+                    //dsutil.DSUtil.WriteFile(_logfile, arrivesByStr, "admin");
                 }
                 else
                 {
