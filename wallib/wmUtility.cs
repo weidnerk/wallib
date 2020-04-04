@@ -99,7 +99,14 @@ namespace wallib
                         }
                         else 
                         {
-                            ParseArrivesBy(URL, item, html, calcArrivalDate);
+                            if (item.OutOfStock || item.ShippingNotAvailable)
+                            {
+                                // no point in trying to get arrival date
+                            }
+                            else
+                            {
+                                ParseArrivesBy(URL, item, html, calcArrivalDate);
+                            }
                             //dsutil.DSUtil.WriteFile(_logfile, "end call to ParseArrivesBy", "admin");
                         }
 
@@ -180,14 +187,12 @@ namespace wallib
                             }
                             else
                             {
-                                item.OutOfStock = true;
                                 item.ShippingNotAvailable = true;
                                 dsutil.DSUtil.WriteFile(_logfile, "Arrives By failed on 2nd attempt", "admin");
                             }
                         }
                         else
                         {
-                            item.OutOfStock = true;
                             item.ShippingNotAvailable = true;
                             dsutil.DSUtil.WriteFile(_logfile, "Arrives By failed on 2nd attempt", "admin");
                         }
@@ -1707,7 +1712,7 @@ namespace wallib
                 // but I thought that's what ImplicitWait was for.
                 // not sure - can come back to this.
                 Thread.Sleep(2000);
-                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(15);
                 driver.Navigate().GoToUrl(URL);
                 Thread.Sleep(2000);
 
