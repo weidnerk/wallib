@@ -1482,21 +1482,55 @@ namespace wallib
         /// <returns></returns>
         public static string RemoveDisclaimer(string descr)
         {
-            // Remove product disclaimer
-            string marker = @"<div class=""product-description-disclaimer""";
-            string endMarker = "<div class=\"about-desc\"";
-
-            int pos = descr.IndexOf(marker);
-            int endPos = descr.IndexOf(endMarker, pos + marker.Length);
-            if (endPos > -1)
+            try
             {
-                string toRemove = descr.Substring(pos, endPos - pos);
-                string output = descr.Replace(toRemove, "");
-                return output;
-            }
-            return descr;
-        }
+                // Remove product disclaimer
+                string marker = @"<div class=""product-description-disclaimer""";
+                string endMarker = "<div class=\"about-desc";
 
+                int pos = descr.IndexOf(marker);
+                int endPos = descr.IndexOf(endMarker, pos + marker.Length);
+                if (endPos > -1)
+                {
+                    string toRemove = descr.Substring(pos, endPos - pos);
+                    string output = descr.Replace(toRemove, "");
+                    return output;
+                }
+                else
+                {
+                    string secondTry = RemoveDisclaimer_2ndTry(descr);
+                    return secondTry;
+                }
+            }
+            catch (Exception exc)
+            {
+                string secondTry = RemoveDisclaimer_2ndTry(descr);
+                return secondTry;
+            }
+        }
+        public static string RemoveDisclaimer_2ndTry(string descr)
+        {
+            try
+            {
+                // Remove product disclaimer
+                string marker = @"<div class=""product-description-disclaimer xs-margin-top""";
+                string endMarker = "<div class=\"about-desc";
+
+                int pos = descr.IndexOf(marker);
+                int endPos = descr.IndexOf(endMarker, pos + marker.Length);
+                if (endPos > -1)
+                {
+                    string toRemove = descr.Substring(pos, endPos - pos);
+                    string output = descr.Replace(toRemove, "");
+                    return output;
+                }
+                return descr;
+            }
+            catch (Exception exc)
+            {
+                return descr;
+            }
+        }
         protected static string SearchUrl(string search)
         {
             string url = string.Format("https://www.walmart.com/search/?query={0}", search);
