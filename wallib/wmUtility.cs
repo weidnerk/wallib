@@ -150,6 +150,7 @@ namespace wallib
                         {
                             item.SoldAndShippedBySupplier = FulfilledByWalmart_method2(html);
                         }
+                        bool only1 = Only1Left(html);
                     }
                     else
                     {
@@ -1230,6 +1231,25 @@ namespace wallib
             }
             return UPC;
         }
+        public static bool Only1Left(string html)
+        {
+            string marker = "Only 1 left!";
+            try
+            {
+                int pos = html.IndexOf(marker);
+                if (pos > -1)
+                {
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception exc)
+            {
+                string ret = dsutil.DSUtil.ErrMsg("Only1Left", exc);
+                dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
+                return false;
+            }
+        }
         /// <summary>
         /// Validate string parsed as UPC
         /// </summary>
@@ -1688,17 +1708,43 @@ namespace wallib
             const string mustStartWith = "https://www.walmart.com/ip/";
             bool startsWith = url.StartsWith(mustStartWith);
 
-            if (startsWith)
+            try
             {
-                int pos = url.LastIndexOf("/");
-                if (url.Length > pos)
+                if (startsWith)
                 {
-                    string itemID = url.Substring(pos + 1, url.Length - (pos + 1));
-                    if (dsutil.DSUtil.IsDigitsOnly(itemID))
+                    int pos = url.LastIndexOf("/");
+                    if (url.Length > pos)
                     {
-                        ret = true;
+                        // if no querystring found
+                        int qmPos = url.IndexOf("?");
+                        if (qmPos == -1)
+                        {
+                            string itemID = url.Substring(pos + 1, url.Length - (pos + 1));
+                            if (dsutil.DSUtil.IsDigitsOnly(itemID))
+                            {
+                                ret = true;
+                            }
+                        }
+                        else
+                        {
+                            string itemID = url.Substring(pos + 1, qmPos - (pos + 1));
+                            if (dsutil.DSUtil.IsDigitsOnly(itemID))
+                            {
+                                string qs = url.Substring(qmPos + 1, url.Length - (qmPos + 1));
+                                if (qs == "selected=true")
+                                {
+                                    ret = true;
+                                }
+                            }
+                        }
                     }
                 }
+            }
+            catch (Exception exc)
+            {
+                string msg = dsutil.DSUtil.ErrMsg("isValidProductURL", exc);
+                dsutil.DSUtil.WriteFile(_logfile, url + ": " + msg, "nonname");
+                throw;
             }
             return ret;
         }
