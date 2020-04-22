@@ -404,6 +404,20 @@ namespace wallib
         /// <returns></returns>
         protected static bool IsVariation(string html)
         {
+            // isn't all we need is to look for 'Choose an option'?
+            // I don't like IsVariation_orig() [below]
+            int pos = html.IndexOf("Choose an option");
+            if (pos > -1)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        protected static bool IsVariation_orig(string html)
+        {
             int pos = html.IndexOf("Choose an option");
             if (pos == -1)
             {
@@ -431,7 +445,6 @@ namespace wallib
                 return true;
             }
         }
-
         /// <summary>
         /// Get the names of the variations (like 'Black', 'Brown')
         /// Run off the main page.
