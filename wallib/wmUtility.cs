@@ -203,6 +203,11 @@ namespace wallib
                 {
                     var arriveby = ParseArrival(arrivesByStr);
                     item.Arrives = arriveby;
+                    if (arriveby.HasValue)
+                    {
+                        var days = dsutil.DSUtil.GetBusinessDays(DateTime.Today, arriveby.Value);
+                        item.BusinessDaysArrives = days;
+                    }
                     //dsutil.DSUtil.WriteFile(_logfile, arrivesByStr, "admin");
                 }
                 else
