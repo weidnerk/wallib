@@ -1657,7 +1657,9 @@ namespace wallib
                 int days = dsutil.DSUtil.GetBusinessDays(DateTime.Now, item.Arrives.Value);
                 if (days > allowedDeliveryDays)
                 {
-                    canList.Add("Slow shipping and handling");
+                    string msg = string.Format("{0} days, over by {1} day(s)", days, days - allowedDeliveryDays);
+                    canList.Add(msg);
+                    //canList.Add("Slow shipping and handling");
                 }
             }
             if (item.IsFreightShipping.HasValue)
