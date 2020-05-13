@@ -1190,7 +1190,7 @@ namespace wallib
         /// <param name="html"></param>
         /// <param name="itemId"></param>
         /// <returns></returns>
-        public static decimal? getVariationPrice(string html, string itemId)
+        protected static decimal? getVariationPrice(string html, string itemId)
         {
             string priceMarker = "\"itemId\":\"" + itemId + "\",\"price\":";
             int endPricePos = 0;
@@ -1215,7 +1215,7 @@ namespace wallib
         /// <param name="price"></param>
         /// <param name="px_mult"></param>
         /// <returns></returns>
-        public static decimal reprice(decimal price, double px_mult)
+        protected static decimal reprice(decimal price, double px_mult)
         {
             const decimal shippingCost = 6.0m;
             const decimal freeShipping = 35.0m;
@@ -1229,7 +1229,7 @@ namespace wallib
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
-        public static string GetUPC(string html)
+        protected static string GetUPC(string html)
         {
             string UPC = null;
             string marker = "\"upc\":\"";
@@ -1249,7 +1249,7 @@ namespace wallib
             }
             return UPC;
         }
-        public static bool Only1Left(string html)
+        protected static bool Only1Left(string html)
         {
             string marker = "Only 1 left!";
             try
@@ -1273,7 +1273,7 @@ namespace wallib
         /// </summary>
         /// <param name="UPC"></param>
         /// <returns></returns>
-        public static bool IsValidUPC(string UPC)
+        protected static bool IsValidUPC(string UPC)
         {
             if (UPC.Length != 12)
             {
@@ -1293,7 +1293,7 @@ namespace wallib
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
-        public static string GetMPN(string html)
+        protected static string GetMPN(string html)
         {
             /*
              * Find div with class 'Specification-container'
@@ -1324,7 +1324,7 @@ namespace wallib
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
-        public static string GetBrand(string html)
+        protected static string GetBrand(string html)
         {
             /*
              * Find div with class 'Specification-container'
@@ -1374,7 +1374,7 @@ namespace wallib
             }
             return brand;
         }
-        public static string GetArrivesByVariation(string URL)
+        protected static string GetArrivesByVariation(string URL)
         {
             //string html = dsutil.DSUtil.sc NavigateToTransHistory(URL);
             string html = dsutil.Scrape.NavigateToTransHistory(URL);
@@ -1385,7 +1385,7 @@ namespace wallib
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
-        public static string GetArrivesBy(string html)
+        protected static string GetArrivesBy(string html)
         {
             //string str = dsutil.DSUtil.HTMLToString(html);
             //string str1 = dsutil.DSUtil.HTMLToString_Full(html);
@@ -1499,7 +1499,7 @@ namespace wallib
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
-        public static string GetDescr(string html)
+        protected static string GetDescr(string html)
         {
             string marker = @"<div id=""product-about""";
             string result = null;
@@ -1518,7 +1518,7 @@ namespace wallib
         /// </summary>
         /// <param name="descr"></param>
         /// <returns></returns>
-        public static string RemoveDisclaimer(string descr)
+        protected static string RemoveDisclaimer(string descr)
         {
             try
             {
@@ -1546,7 +1546,7 @@ namespace wallib
                 return secondTry;
             }
         }
-        public static string RemoveDisclaimer_2ndTry(string descr)
+        protected static string RemoveDisclaimer_2ndTry(string descr)
         {
             try
             {
@@ -1575,7 +1575,7 @@ namespace wallib
             return url;
         }
 
-        public static bool SearchMatch(string url)
+        protected static bool SearchMatch(string url)
         {
             return false;
         }
@@ -1768,7 +1768,7 @@ namespace wallib
             }
             return ret;
         }
-        public static string FirstMatchURL(List<string> links)
+        protected static string FirstMatchURL(List<string> links)
         {
             string ret = null;
             foreach(string link in links)
