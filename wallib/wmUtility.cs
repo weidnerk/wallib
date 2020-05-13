@@ -105,7 +105,7 @@ namespace wallib
                             }
                             else
                             {
-                                ParseArrivesBy(URL, item, html, calcArrivalDate);
+                                item.ArrivalDateFlag = ParseArrivesBy(URL, item, html, calcArrivalDate);
                             }
                             //dsutil.DSUtil.WriteFile(_logfile, "end call to ParseArrivesBy", "admin");
                         }
@@ -168,8 +168,17 @@ namespace wallib
             return item;
         }
 
-        protected static void ParseArrivesBy(string URL, SupplierItem item, string html, bool calcArrivalDate)
+        /// <summary>
+        /// For return, want to know if Selenium was start or not, so pass a 1 or 2 if Selenium was used.
+        /// </summary>
+        /// <param name="URL"></param>
+        /// <param name="item"></param>
+        /// <param name="html"></param>
+        /// <param name="calcArrivalDate"></param>
+        /// <returns>0=not selenium, 1-success using selenium, 2-selenium no success</returns>
+        protected static int ParseArrivesBy(string URL, SupplierItem item, string html, bool calcArrivalDate)
         {
+            int ret = 0;
             try
             {
                 string arrivesByStr = GetArrivesBy(html);
@@ -184,16 +193,19 @@ namespace wallib
                             arrivesByStr = GetArrivesBy(deliveryHtml);
                             if (arrivesByStr != null)
                             {
+                                ret = 1;
                                 dsutil.DSUtil.WriteFile(_logfile, "Arrives By success on 2nd attempt", "admin");
                             }
                             else
                             {
+                                ret = 2;
                                 item.ShippingNotAvailable = true;
                                 dsutil.DSUtil.WriteFile(_logfile, "Arrives By failed on 2nd attempt", "admin");
                             }
                         }
                         else
                         {
+                            ret = 2;
                             item.ShippingNotAvailable = true;
                             dsutil.DSUtil.WriteFile(_logfile, "Arrives By failed on 2nd attempt", "admin");
                         }
@@ -208,17 +220,18 @@ namespace wallib
                         var days = dsutil.DSUtil.GetBusinessDays(DateTime.Today, arriveby.Value);
                         item.BusinessDaysArrives = days;
                     }
-                    //dsutil.DSUtil.WriteFile(_logfile, arrivesByStr, "admin");
                 }
                 else
                 {
                     dsutil.DSUtil.WriteFile(_logfile, "Could not parse arrival date.", "admin");
                 }
+                return ret;
             }
             catch(Exception exc)
             {
                 string msg = dsutil.DSUtil.ErrMsg("ParseArrivesBy", exc);
                 dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                return ret;
             }
         }
 
