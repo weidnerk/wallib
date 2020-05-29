@@ -416,25 +416,12 @@ namespace wallib
         }
 
         /// <summary>
-        /// Is the item a variation?
+        /// If URL is a selected variation url such as has "selected=true" at the end then "Choose an option" won't be found
+        /// and instead need to look for "option" text
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
         protected static bool IsVariation(string html)
-        {
-            // isn't all we need is to look for 'Choose an option'?
-            // I don't like IsVariation_orig() [below]
-            int pos = html.IndexOf("Choose an option");
-            if (pos > -1)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        protected static bool IsVariation_orig(string html)
         {
             int pos = html.IndexOf("Choose an option");
             if (pos == -1)
@@ -1705,6 +1692,8 @@ namespace wallib
                 canList.Add("Shipping not available");
             }
             
+            /*
+             * Perhaps obsolete since I have been seeing correct pictures being fetched.
             if  (item.IsVariation.HasValue)
             {
                 if (item.IsVariation.Value)
@@ -1712,6 +1701,7 @@ namespace wallib
                     canList.Add("Item is a variation - can't grab correct pictures");
                 }
             }
+            */
             item.CanList = canList;
             item.Warning = dsutil.DSUtil.GetDescrWarnings(item.Description);
         }
