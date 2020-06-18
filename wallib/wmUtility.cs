@@ -176,7 +176,7 @@ namespace wallib
         /// <param name="html"></param>
         /// <param name="calcArrivalDate"></param>
         /// <returns>0=not selenium, 1-success using selenium, 2-selenium no success</returns>
-        protected static int ParseArrivesBy(string URL, SupplierItem item, string html, bool calcArrivalDate)
+        protected static int ParseArrivesBy(string URL, ISupplierItem item, string html, bool calcArrivalDate)
         {
             int ret = 0;
             try
@@ -1523,8 +1523,10 @@ namespace wallib
             try
             {
                 // Remove product disclaimer
-                string marker = @"<div class=""product-description-disclaimer""";
-                string endMarker = "<div class=\"about-desc";
+                string marker = @"<div class=""product-description-disclaimer";
+
+                //string endMarker = "<div class=\"about-desc";
+                string endMarker = "</div";
 
                 int pos = descr.IndexOf(marker);
                 int endPos = descr.IndexOf(endMarker, pos + marker.Length);
@@ -1649,7 +1651,7 @@ namespace wallib
         /// </summary>
         /// <param name="item"></param>
         /// <param name="allowedDeliveryDays"></param>
-        public static void CanList(SupplierItem item, int allowedDeliveryDays)
+        public static void CanList(ISupplierItem item, int allowedDeliveryDays)
         {
             var canList = new List<string>();
             if (item.Arrives.HasValue)
