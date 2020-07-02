@@ -87,7 +87,7 @@ namespace wallib
                             item.usItemId = Collect_usItemId(URL, html);
                             item.SupplierVariation = InitSupplierVariations(URL, item.usItemId);
                             item.VariationPicURL = GetVariationImages(html, item.SupplierVariation.Count, URL);
-                            FetchAndFillVariations(item.SupplierVariation, item.VariationPicURL);
+                            await FetchAndFillVariations(item.SupplierVariation, item.VariationPicURL);
                         }
                         item.OutOfStock = ParseOutOfStock(html);
                         item.ShippingNotAvailable = ParseShippingNotAvailable(html);
@@ -163,7 +163,7 @@ namespace wallib
                 string header = string.Format("wm GetDetail: {0}", URL);
                 string ret = dsutil.DSUtil.ErrMsg(header, exc);
                 dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
-                throw new Exception(ret);
+                throw;
             }
             return item;
         }
@@ -231,7 +231,7 @@ namespace wallib
             {
                 string msg = dsutil.DSUtil.ErrMsg("ParseArrivesBy", exc);
                 dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
-                return ret;
+                throw;
             }
         }
 
@@ -240,30 +240,49 @@ namespace wallib
         /// </summary>
         /// <param name="supplierVariation"></param>
         /// <param name="pics"></param>
-        protected static void FetchAndFillVariations(List<SupplierVariation> supplierVariation, List<string> pics)
+        protected async static Task FetchAndFillVariations(List<SupplierVariation> supplierVariation, List<string> pics)
         {
             int x = supplierVariation.Count;
             int y = pics.Count;
             int variationPicCount = y / (x + 1);
             int offset = 0;
+            string url = "";
+            string result;
 
-            foreach (var sv in supplierVariation)
+            try
             {
-                string url = sv.URL;
-                HttpClient var_client = new HttpClient();
-                using (HttpResponseMessage var_response = var_client.GetAsync(url).Result)
+                foreach (var sv in supplierVariation)
                 {
-                    using (HttpContent var_content = var_response.Content)
+                    url = sv.URL;
+                    using (HttpClient client = new HttpClient())
                     {
-                        string result = var_content.ReadAsStringAsync().Result;
-                        var variation_price = getVariationPrice(result, sv.ItemID);
-                        sv.Price = variation_price;
-                        sv.Variation = GetVariation(result);
-                        sv.Images = BuildVarPicList(pics, offset, variationPicCount);
-                        offset += variationPicCount;
-                        //GetVariationImages(result);
+                        using (HttpResponseMessage var_response = await client.GetAsync(url))
+                        {
+                            using (HttpContent var_content = var_response.Content)
+                            {
+                                // 06.30.2020 strange here in that sometimes 'result' is a binary string - exception thrown
+                                // but since this is alpha variation code, don't rethrow the exception - it's logged.
+                                result = await var_content.ReadAsStringAsync();
+
+                                // ...and so getVariationPrice() will throw an error
+                                var variation_price = getVariationPrice(result, sv.ItemID);
+                                sv.Price = variation_price;
+                                sv.Variation = GetVariation(result);
+                                sv.Images = BuildVarPicList(pics, offset, variationPicCount);
+                                offset += variationPicCount;
+                                //GetVariationImages(result);
+                            }
+                        }
                     }
                 }
+            }
+            catch (Exception exc)
+            {
+                string msg = dsutil.DSUtil.ErrMsg("FetchAndFillVariations", exc) + " " + url;
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+
+                // see not above
+                // throw;
             }
         }
         /// <summary>
@@ -345,23 +364,32 @@ namespace wallib
             string usItemIdMarker = "usItemId\":\"";
             string endMarker = "\"";
 
-            itemNo.Add(GetItemIDFromURL(URL));
-            int pos = html.IndexOf(marker);
-            bool done = false;
-            while (!done)
+            try
             {
-                int itemMarkerPos = html.IndexOf(usItemIdMarker, pos + 1);
-                if (itemMarkerPos > -1)
+                itemNo.Add(GetItemIDFromURL(URL));
+                int pos = html.IndexOf(marker);
+                bool done = false;
+                while (!done)
                 {
-                    itemMarkerPos += usItemIdMarker.Length;
-                    int itemMarkerEndPos = html.IndexOf(endMarker, itemMarkerPos);
-                    string usItemId = html.Substring(itemMarkerPos, itemMarkerEndPos - itemMarkerPos);
-                    itemNo.Add(usItemId);
-                    pos = itemMarkerEndPos + 1;
+                    int itemMarkerPos = html.IndexOf(usItemIdMarker, pos + 1);
+                    if (itemMarkerPos > -1)
+                    {
+                        itemMarkerPos += usItemIdMarker.Length;
+                        int itemMarkerEndPos = html.IndexOf(endMarker, itemMarkerPos);
+                        string usItemId = html.Substring(itemMarkerPos, itemMarkerEndPos - itemMarkerPos);
+                        itemNo.Add(usItemId);
+                        pos = itemMarkerEndPos + 1;
+                    }
+                    else done = true;
                 }
-                else done = true;
+                return itemNo;
             }
-            return itemNo;
+            catch (Exception exc)
+            {
+                string msg = dsutil.DSUtil.ErrMsg("Collect_usItemId", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                throw;
+            }
         }
 
         /// <summary>
@@ -423,17 +451,24 @@ namespace wallib
         /// <returns></returns>
         protected static bool IsVariation(string html)
         {
-            int pos = html.IndexOf("Choose an option");
-            if (pos == -1)
+            try
             {
-                pos = html.IndexOf("Actual Color:");
+                int pos = html.IndexOf("Choose an option");
                 if (pos == -1)
                 {
-                    pos = html.IndexOf("Size:");
+                    pos = html.IndexOf("Actual Color:");
                     if (pos == -1)
                     {
-                        pos = html.IndexOf("Count:");
-                        return (pos > -1) ? true : false;
+                        pos = html.IndexOf("Size:");
+                        if (pos == -1)
+                        {
+                            pos = html.IndexOf("Count:");
+                            return (pos > -1) ? true : false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
                     }
                     else
                     {
@@ -445,9 +480,11 @@ namespace wallib
                     return true;
                 }
             }
-            else
+            catch (Exception exc)
             {
-                return true;
+                string msg = dsutil.DSUtil.ErrMsg("IsVariation", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                throw;
             }
         }
         /// <summary>
@@ -556,12 +593,21 @@ namespace wallib
             string marker = "Current selection is: ";
             string endMarker = "\"";
 
-            int pos = html.IndexOf(marker);
-            pos += marker.Length;
-            int endPos = html.IndexOf(endMarker, pos);
+            try
+            {
+                int pos = html.IndexOf(marker);
+                pos += marker.Length;
+                int endPos = html.IndexOf(endMarker, pos);
 
-            string variation = html.Substring(pos, endPos - pos);
-            return variation;
+                string variation = html.Substring(pos, endPos - pos);
+                return variation;
+            }
+            catch (Exception exc)
+            {
+                string msg = dsutil.DSUtil.ErrMsg("GetVariation", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                throw;
+            }
         }
 
         /// <summary>
@@ -608,14 +654,15 @@ namespace wallib
                         }
                     }
                 }
+                return variationName;
             }
             catch (Exception exc)
             {
                 string header = string.Format("GetVariationName");
                 string ret = dsutil.DSUtil.ErrMsg(header, exc);
                 dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
+                throw;
             }
-            return variationName;
         }
 
         /// <summary>
@@ -706,88 +753,99 @@ namespace wallib
             int startPos = 0;
             int endPos = 0;
 
-            startPos = html.IndexOf(startMarker);
-            if (startPos > -1)
-            {
-                endPos = html.IndexOf(endMarker, startPos);
-                string toSearch = html.Substring(startPos, endPos - startPos);
-
-                int nextPos = 0;
-                bool done = false;
-                bool isPNG;
-                bool isJPEG;
-                do
+            try 
+            { 
+                startPos = html.IndexOf(startMarker);
+                if (startPos > -1)
                 {
-                    isPNG = false;
-                    isJPEG = false;
-                    int pos = toSearch.IndexOf("https://i5.walmartimages.com/asr/", nextPos);
-                    if (pos > -1)
-                    {
-                        int stop = -1;
-                        int stop_jpeg = toSearch.IndexOf("jpeg", pos + 1);
-                        int stop_png = toSearch.IndexOf("png", pos + 1);
+                    endPos = html.IndexOf(endMarker, startPos);
+                    string toSearch = html.Substring(startPos, endPos - startPos);
 
-                        if (stop_jpeg > -1 && stop_png > -1)
+                    int nextPos = 0;
+                    bool done = false;
+                    bool isPNG;
+                    bool isJPEG;
+                    do
+                    {
+                        isPNG = false;
+                        isJPEG = false;
+                        int pos = toSearch.IndexOf("https://i5.walmartimages.com/asr/", nextPos);
+                        if (pos > -1)
                         {
-                            if (stop_jpeg < stop_png)
+                            int stop = -1;
+                            int stop_jpeg = toSearch.IndexOf("jpeg", pos + 1);
+                            int stop_png = toSearch.IndexOf("png", pos + 1);
+
+                            if (stop_jpeg > -1 && stop_png > -1)
+                            {
+                                if (stop_jpeg < stop_png)
+                                {
+                                    stop = stop_jpeg;
+                                    isJPEG = true;
+                                }
+                                else
+                                {
+                                    stop = stop_png;
+                                    isPNG = true;
+                                }
+                            }
+                            else if (stop_jpeg > -1)
                             {
                                 stop = stop_jpeg;
                                 isJPEG = true;
                             }
-                            else
+                            else if (stop_png > -1)
                             {
                                 stop = stop_png;
                                 isPNG = true;
                             }
-                        }
-                        else if (stop_jpeg > -1)
-                        {
-                            stop = stop_jpeg;
-                            isJPEG = true;
-                        }
-                        else if (stop_png > -1)
-                        {
-                            stop = stop_png;
-                            isPNG = true;
-                        }
-                        if (stop > -1)
-                        {
-                            int offset = 0;
-                            if (isJPEG)
+                            if (stop > -1)
                             {
-                                offset = 4;
+                                int offset = 0;
+                                if (isJPEG)
+                                {
+                                    offset = 4;
+                                }
+                                if (isPNG)
+                                {
+                                    offset = 3;
+                                }
+                                string pic = toSearch.Substring(pos, stop - pos + offset);
+                                images.Add(pic);
+                                nextPos = stop + 1;
                             }
-                            if (isPNG)
+                            else
                             {
-                                offset = 3;
+                                done = true;
                             }
-                            string pic = toSearch.Substring(pos, stop - pos + offset);
-                            images.Add(pic);
-                            nextPos = stop + 1;
                         }
                         else
                         {
                             done = true;
                         }
-                    }
-                    else
-                    {
-                        done = true;
-                    }
-                } while (!done);
-            }
-            else
-            {
-                return null;
-            }
-            if (images.Count > imgLimit)
-            {
-                do
+                    } while (!done);
+                }
+                else
                 {
-                    images.RemoveAt(imgLimit);
-                } while (images.Count > imgLimit);
+                    return null;
+                }
+                if (images.Count > imgLimit)
+                {
+                    do
+                    {
+                        images.RemoveAt(imgLimit);
+                    } while (images.Count > imgLimit);
+                }
+                return images;
             }
-            return images;
+            catch (Exception exc)
+            {
+                string header = string.Format("GetImages");
+                string ret = dsutil.DSUtil.ErrMsg(header, exc);
+                dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
+                throw;
+            }
+            //return images;
         }
         /// <summary>
         /// Get variation images.
@@ -828,14 +886,15 @@ namespace wallib
                         } while (pos > -1);
                     }
                 }
+                return images;
             }
             catch (Exception exc)
             {
                 string header = string.Format("GetVariationImages: " + URL);
                 string ret = dsutil.DSUtil.ErrMsg(header, exc);
                 dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
+                throw;
             }
-            return images;
         }
 
         /// It looks like this method still holds true for variations
@@ -999,19 +1058,27 @@ namespace wallib
         /// <returns></returns>
         protected static bool FulfilledByWalmart(string html)
         {
-            string str = dsutil.DSUtil.HTMLToString(html);
-            const string shippedMarker = "Sold &amp; shipped by</span></span><a class=\"seller-name\" href=\"https://help.walmart.com/\" data-tl-id=\"ProductSellerInfo-SellerName\" tabindex=\"0\">Walmart</a>";
-            int pos = html.IndexOf(shippedMarker);
-            if (pos > -1)
+            try
             {
-                return true;
+                string str = dsutil.DSUtil.HTMLToString(html);
+                const string shippedMarker = "Sold &amp; shipped by</span></span><a class=\"seller-name\" href=\"https://help.walmart.com/\" data-tl-id=\"ProductSellerInfo-SellerName\" tabindex=\"0\">Walmart</a>";
+                int pos = html.IndexOf(shippedMarker);
+                if (pos > -1)
+                {
+                    return true;
+                }
+                else
+                {
+                    bool ret = FulfilledByWalmart_method2(html);
+                    return ret;
+                }
             }
-            else
+            catch (Exception exc)
             {
-                bool ret = FulfilledByWalmart_method2(html);
-                return ret;
+                string msg = dsutil.DSUtil.ErrMsg("FulfilledByWalmart", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                throw;
             }
-            return false;
         }
 
         /// <summary>
@@ -1021,19 +1088,28 @@ namespace wallib
         /// <returns></returns>
         protected static bool FulfilledByWalmart_method2(string html)
         {
-            string str = dsutil.DSUtil.HTMLToString(html);
-            string str1 = dsutil.DSUtil.HTMLToString_Full(html);
-            //const string marker = @"\""displayName\"":\""Sold By\"",\""displayValue\"":\""Walmart\""";
-            string marker = @"\""displayName\""";
-            marker = "\"displayName\":\"Sold By\",\"displayValue\":\"Walmart\"";
-            int pos = html.IndexOf(marker);
-            //pos = str.IndexOf(marker);
-            //pos = str1.IndexOf(marker);
-            if (pos > -1)
+            try
             {
-                return true;
+                string str = dsutil.DSUtil.HTMLToString(html);
+                string str1 = dsutil.DSUtil.HTMLToString_Full(html);
+                //const string marker = @"\""displayName\"":\""Sold By\"",\""displayValue\"":\""Walmart\""";
+                string marker = @"\""displayName\""";
+                marker = "\"displayName\":\"Sold By\",\"displayValue\":\"Walmart\"";
+                int pos = html.IndexOf(marker);
+                //pos = str.IndexOf(marker);
+                //pos = str1.IndexOf(marker);
+                if (pos > -1)
+                {
+                    return true;
+                }
+                return false;
             }
-            return false;
+            catch (Exception exc)
+            {
+                string msg = dsutil.DSUtil.ErrMsg("FulfilledByWalmart_method2", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                throw;
+            }
         }
 
         /// <summary>
@@ -1090,27 +1166,38 @@ namespace wallib
             const string marker = "Shipping not available";
             const string marker2 = "Delivery not available";
             const string marker3 = "Price for in-store purchase only";
-            int pos = html.IndexOf(marker);
-            if (pos > -1) {
-                ret = true;
-            }
-            else
+
+            try
             {
-                pos = html.IndexOf(marker2);
+                int pos = html.IndexOf(marker);
                 if (pos > -1)
                 {
                     ret = true;
                 }
                 else
                 {
-                    pos = html.IndexOf(marker3);
+                    pos = html.IndexOf(marker2);
                     if (pos > -1)
                     {
                         ret = true;
                     }
+                    else
+                    {
+                        pos = html.IndexOf(marker3);
+                        if (pos > -1)
+                        {
+                            ret = true;
+                        }
+                    }
                 }
+                return ret;
             }
-            return ret;
+            catch (Exception exc)
+            {
+                string msg = dsutil.DSUtil.ErrMsg("ParseShippingNotAvailable", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                throw;
+            }
         }
 
         /// <summary>
@@ -1145,10 +1232,19 @@ namespace wallib
             int endPricePos = 0;
             string offerPrice = null;
 
-            int pricePos = html.IndexOf(priceMarker, startSearching);
-            endPricePos = html.IndexOf(",", pricePos + priceMarker.Length);
-            offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
-            return offerPrice;
+            try
+            {
+                int pricePos = html.IndexOf(priceMarker, startSearching);
+                endPricePos = html.IndexOf(",", pricePos + priceMarker.Length);
+                offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
+                return offerPrice;
+            }
+            catch (Exception exc)
+            {
+                string msg = dsutil.DSUtil.ErrMsg("getOfferPriceDetail", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                throw;
+            }
         }
         /// <summary>
         /// Another attempt to get item's price.
@@ -1179,10 +1275,19 @@ namespace wallib
             int endPricePos = 0;
             string offerPrice = null;
 
-            int pricePos = html.IndexOf(priceMarker, startSearching);
-            endPricePos = html.IndexOf("\"", pricePos + priceMarker.Length);
-            offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
-            return offerPrice;
+            try
+            {
+                int pricePos = html.IndexOf(priceMarker, startSearching);
+                endPricePos = html.IndexOf("\"", pricePos + priceMarker.Length);
+                offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
+                return offerPrice;
+            }
+            catch (Exception exc)
+            {
+                string msg = dsutil.DSUtil.ErrMsg("getOfferPriceDetail_thirdAttempt", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                throw;
+            }
         }
         /// <summary>
         /// 
@@ -1195,18 +1300,26 @@ namespace wallib
             string priceMarker = "\"itemId\":\"" + itemId + "\",\"price\":";
             int endPricePos = 0;
             string offerPrice = null;
-
-            int pricePos = html.IndexOf(priceMarker);
-            endPricePos = html.IndexOf(",", pricePos + priceMarker.Length);
-            offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
-
-            decimal price;
-            bool r = decimal.TryParse(offerPrice, out price);
-            if (r)
+            try
             {
-                return price;
+                int pricePos = html.IndexOf(priceMarker);
+                endPricePos = html.IndexOf(",", pricePos + priceMarker.Length);
+                offerPrice = html.Substring(pricePos + priceMarker.Length, endPricePos - (pricePos + priceMarker.Length));
+
+                decimal price;
+                bool r = decimal.TryParse(offerPrice, out price);
+                if (r)
+                {
+                    return price;
+                }
+                else return null;
             }
-            else return null;
+            catch (Exception exc)
+            {
+                string msg = dsutil.DSUtil.ErrMsg("getVariationPrice", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                throw;
+            }
         }
 
         /// <summary>
@@ -1241,13 +1354,14 @@ namespace wallib
                 {
                     return null;
                 }
+                return UPC;
             }
             catch (Exception exc)
             {
                 string ret = dsutil.DSUtil.ErrMsg("GetUPC", exc);
                 dsutil.DSUtil.WriteFile(_logfile, ret, "admin");
+                throw;
             }
-            return UPC;
         }
         protected static bool Only1Left(string html)
         {
@@ -1302,21 +1416,31 @@ namespace wallib
              */
             string MPN = null;
             HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
-            var node = doc.DocumentNode.SelectSingleNode("//div[@class='Specification-container']");
-            if (node != null)
-            {
-                var part = node.SelectSingleNode("//*[text()[contains(., 'Manufacturer Part Number')]]");
-                if (part != null)
+
+            try 
+            { 
+                doc.LoadHtml(html);
+                var node = doc.DocumentNode.SelectSingleNode("//div[@class='Specification-container']");
+                if (node != null)
                 {
-                    var match = part.NextSibling;
-                    if (match != null)
+                    var part = node.SelectSingleNode("//*[text()[contains(., 'Manufacturer Part Number')]]");
+                    if (part != null)
                     {
-                        MPN = match.InnerText;
+                        var match = part.NextSibling;
+                        if (match != null)
+                        {
+                            MPN = match.InnerText;
+                        }
                     }
                 }
+                return MPN;
             }
-            return MPN;
+            catch (Exception exc)
+            {
+                string msg = dsutil.DSUtil.ErrMsg("GetMPN", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                throw;
+            }
         }
         /// <summary>
         /// https://html-agility-pack.net/knowledge-base/30873180/csharp-htmlagilitypack-htmlnodecollection-selectnodes-not-working
@@ -1333,46 +1457,56 @@ namespace wallib
              */
             string brand = null;
             HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
-            
-            HtmlNode node;
 
-            node = doc.DocumentNode.SelectSingleNode("//a[@class='prod-brandName']");
-            if (node == null)
+            try
             {
-                node = doc.DocumentNode.SelectSingleNode("//div[@id='specifications']");
+                doc.LoadHtml(html);
+
+                HtmlNode node;
+
+                node = doc.DocumentNode.SelectSingleNode("//a[@class='prod-brandName']");
                 if (node == null)
                 {
-                    node = doc.DocumentNode.SelectSingleNode("//div[@class='HomeSpecifications text-left']");
-                    node = doc.DocumentNode.SelectSingleNode("//table[@class='table table-striped-odd specification']");
+                    node = doc.DocumentNode.SelectSingleNode("//div[@id='specifications']");
                     if (node == null)
                     {
-                        node = doc.DocumentNode.SelectSingleNode("//div[@class='Specification-containter']");
+                        node = doc.DocumentNode.SelectSingleNode("//div[@class='HomeSpecifications text-left']");
+                        node = doc.DocumentNode.SelectSingleNode("//table[@class='table table-striped-odd specification']");
                         if (node == null)
                         {
-                            node = doc.DocumentNode.SelectSingleNode("//div[@class='AboutDescriptionWrapper']");
+                            node = doc.DocumentNode.SelectSingleNode("//div[@class='Specification-containter']");
+                            if (node == null)
+                            {
+                                node = doc.DocumentNode.SelectSingleNode("//div[@class='AboutDescriptionWrapper']");
+                            }
                         }
                     }
-                }
-                if (node != null)
-                {
-                    var part = node.SelectSingleNode("//*[text()[contains(., 'Brand')]]");
-                    part = node.SelectSingleNode("//td[text()='Brand']");
-                    if (part != null)
+                    if (node != null)
                     {
-                        var match = part.NextSibling;
-                        if (match != null)
+                        var part = node.SelectSingleNode("//*[text()[contains(., 'Brand')]]");
+                        part = node.SelectSingleNode("//td[text()='Brand']");
+                        if (part != null)
                         {
-                            brand = WebUtility.HtmlDecode(match.InnerText);
+                            var match = part.NextSibling;
+                            if (match != null)
+                            {
+                                brand = WebUtility.HtmlDecode(match.InnerText);
+                            }
                         }
                     }
                 }
+                else
+                {
+                    brand = WebUtility.HtmlDecode(node.InnerText);
+                }
+                return brand;
             }
-            else
+            catch (Exception exc)
             {
-                brand = WebUtility.HtmlDecode(node.InnerText);
+                string msg = dsutil.DSUtil.ErrMsg("GetBrand", exc);
+                dsutil.DSUtil.WriteFile(_logfile, msg, "admin");
+                throw;
             }
-            return brand;
         }
         protected static string GetArrivesByVariation(string URL)
         {
