@@ -1736,7 +1736,7 @@ namespace wallib
                         HtmlDocument doc = new HtmlDocument();
                         doc.LoadHtml(result);
 
-                        var nodes = doc.DocumentNode.SelectNodes("//a[@class='product-title-link line-clamp line-clamp-2']");
+                        var nodes = doc.DocumentNode.SelectNodes("//a[@class='product-title-link line-clamp line-clamp-2 truncate-title']");
                         if (nodes != null)
                         {
                             // get url of first match
