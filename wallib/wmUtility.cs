@@ -17,7 +17,12 @@ namespace wallib
     public class wmUtility
     {
         readonly static string _logfile = "log.txt";
+        private static IRepository _repository;
 
+        public static void Init(IRepository repository)
+        {
+            _repository = repository;
+        }
         /// <summary>
         /// But this is a problem since first has to logon to Walmart.
         /// </summary>
@@ -60,7 +65,6 @@ namespace wallib
             // Index was out of range. Must be non-negative and less than the size of the collection.
             //URL = "https://www.walmart.com/ip/Flower-Exposition-100-Hypoallergenic-cotton-Patchwork-2-piece-Quilt-Set-Bedroom-Quilt-Bedding-Twin-size-Coral/887587945";
 
-            dsmodels.DataModelsDB db = new dsmodels.DataModelsDB();
             var item = new SupplierItem();
             string itemNo = null;
             string descr = null;
@@ -114,7 +118,7 @@ namespace wallib
                         item.UPC = GetUPC(html);
                         item.MPN = GetMPN(html);
                         item.SupplierBrand = GetBrand(html);
-                        item.IsVERO = db.IsVERO(item.SupplierBrand);
+                        item.IsVERO = _repository.IsVERO(item.SupplierBrand);
                         item.Description = GetDescr(html);
                         if (!string.IsNullOrEmpty(item.Description))
                         {
