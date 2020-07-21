@@ -8,6 +8,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -1064,18 +1065,11 @@ namespace wallib
         {
             try
             {
-                string str = dsutil.DSUtil.HTMLToString(html);
-                const string shippedMarker = "Sold &amp; shipped by</span></span><a class=\"seller-name\" href=\"https://help.walmart.com/\" data-tl-id=\"ProductSellerInfo-SellerName\" tabindex=\"0\">Walmart</a>";
-                int pos = html.IndexOf(shippedMarker);
-                if (pos > -1)
-                {
-                    return true;
-                }
-                else
-                {
-                    bool ret = FulfilledByWalmart_method2(html);
-                    return ret;
-                }
+                const string startStr = @"Sold &amp; shipped by</span></span><a class=""seller-name"" href=""https://help.walmart.com";
+                const string endStr = "data-tl-id=\"ProductSellerInfo-SellerName\" tabindex=\"0\">Walmart</a>";
+
+                var foundMatch = Regex.IsMatch(html, startStr + "(.*?)" + endStr);
+                return foundMatch;
             }
             catch (Exception exc)
             {
