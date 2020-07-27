@@ -57,7 +57,7 @@ namespace wallib
         /// </summary>
         /// <param name="URL"></param>
         /// <returns>WalItem object, null if could not fetch item</returns>
-        public static async Task<SupplierItem> GetDetail(string URL, int imgLimit, bool calcArrivalDate)
+        public static async Task<ISupplierItem> GetDetail(string URL, int imgLimit, bool calcArrivalDate)
         {
             // freight delivery
             // URL = "https://www.walmart.com//ip/Carolina-Chair-Table-Tavern-Pub-Bar-Table-44-Espresso/869432422";
@@ -66,7 +66,7 @@ namespace wallib
             // Index was out of range. Must be non-negative and less than the size of the collection.
             //URL = "https://www.walmart.com/ip/Flower-Exposition-100-Hypoallergenic-cotton-Patchwork-2-piece-Quilt-Set-Bedroom-Quilt-Bedding-Twin-size-Coral/887587945";
 
-            var item = new SupplierItem();
+            ISupplierItem item = new SupplierItem();
             string itemNo = null;
             string descr = null;
             var images = new List<string>();
@@ -155,7 +155,7 @@ namespace wallib
                         {
                             item.SoldAndShippedBySupplier = FulfilledByWalmart_method2(html);
                         }
-                        bool only1 = Only1Left(html);
+                        item.LowInventory = Only1Left(html);
                     }
                     else
                     {
