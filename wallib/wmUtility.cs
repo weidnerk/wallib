@@ -73,7 +73,6 @@ namespace wallib
 
             try
             {
-                //URL = CleanURL(URL);
                 using (HttpClient client = new HttpClient())
                 using (HttpResponseMessage response = await client.GetAsync(URL))
                 using (HttpContent content = response.Content)
